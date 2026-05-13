@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+
+{% block title %}管理员 - 系统配置{% endblock %}
+
+{% block header_title %}管理员后台：系统配置{% endblock %}
+
+{% block content %}
+<div class="content-card">
+    <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap;">
+        <div style="font-size:16px; font-weight:800;">全局配置</div>
+        <div style="display:flex; gap:10px; flex-wrap:wrap;">
+            <a class="ai-btn ai-btn--ghost" href="{{ url_for('admin_index') }}" style="text-decoration:none;">后台首页</a>
+            <a class="ai-btn ai-btn--ghost" href="{{ url_for('admin_users') }}" style="text-decoration:none;">用户管理</a>
+            <a class="ai-btn ai-btn--ghost" href="{{ url_for('admin_admins') }}" style="text-decoration:none;">管理员管理</a>
+            <a class="ai-btn ai-btn--ghost" href="{{ url_for('admin_manual_assessments') }}" style="text-decoration:none;">人工测评</a>
+            <a class="ai-btn ai-btn--ghost" href="{{ url_for('admin_usage') }}" style="text-decoration:none;">AI 用量</a>
+        </div>
+    </div>
+    <div style="height:10px;"></div>
+    <form method="POST" action="{{ url_for('admin_config') }}" style="display:grid; grid-template-columns:1fr; gap:12px;">
+        <div>
+            <div style="opacity:0.75; font-size:12px; margin-bottom:6px;">ARK_BASE_URL</div>
+            <input class="form-input" name="ARK_BASE_URL" value="{{ cfg.ARK_BASE_URL }}">
+        </div>
+        <div>
+            <div style="opacity:0.75; font-size:12px; margin-bottom:6px;">ARK_MODEL（推理接入点 ID / 模型名）</div>
+            <input class="form-input" name="ARK_MODEL" value="{{ cfg.ARK_MODEL }}">
+        </div>
+        <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(260px, 1fr)); gap:12px;">
+            <div>
+                <div style="opacity:0.75; font-size:12px; margin-bottom:6px;">AMAP_KEY</div>
+                <input class="form-input" name="AMAP_KEY" value="{{ cfg.AMAP_KEY }}">
+            </div>
+            <div>
+                <div style="opacity:0.75; font-size:12px; margin-bottom:6px;">AMAP_SECURITY_CODE</div>
+                <input class="form-input" name="AMAP_SECURITY_CODE" value="{{ cfg.AMAP_SECURITY_CODE }}">
+            </div>
+        </div>
+        <div style="display:flex; justify-content:flex-end;">
+            <button class="ai-btn ai-btn--primary" type="submit">保存配置</button>
+        </div>
+    </form>
+    <div style="margin-top:12px; opacity:0.75; font-size:12px;">
+        鉴权使用环境变量 ARK_API_KEY，不在系统配置中保存。
+    </div>
+</div>
+{% endblock %}

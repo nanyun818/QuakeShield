@@ -1,0 +1,171 @@
+{% extends "base.html" %}
+
+{% block title %}管理员 - 人工测评{% endblock %}
+
+{% block header_title %}管理员后台：人工测评{% endblock %}
+
+{% block content %}
+<div class="content-card">
+    <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap;">
+        <div style="font-size:16px; font-weight:800;">新增人工测评</div>
+        <div style="display:flex; gap:10px; flex-wrap:wrap;">
+            <a class="ai-btn ai-btn--ghost" href="{{ url_for('admin_index') }}" style="text-decoration:none;">后台首页</a>
+            <a class="ai-btn ai-btn--ghost" href="{{ url_for('admin_users') }}" style="text-decoration:none;">用户管理</a>
+            <a class="ai-btn ai-btn--ghost" href="{{ url_for('admin_admins') }}" style="text-decoration:none;">管理员管理</a>
+            <a class="ai-btn ai-btn--ghost" href="{{ url_for('admin_config') }}" style="text-decoration:none;">系统配置</a>
+        </div>
+    </div>
+
+    <div style="height:12px;"></div>
+
+    <form method="POST" action="{{ url_for('admin_manual_assessments') }}" style="display:grid; grid-template-columns:1fr; gap:12px;">
+        <input type="hidden" name="action" value="create">
+        <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(220px, 1fr)); gap:12px;">
+            <div>
+                <div style="opacity:0.75; font-size:12px; margin-bottom:6px;">绑定用户（可选）</div>
+                <select class="form-input" name="user_id">
+                    <option value="">不绑定</option>
+                    {% for u in users %}
+                    <option value="{{ u.id }}">{{ u.username }} (#{{ u.id }})</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <div style="opacity:0.75; font-size:12px; margin-bottom:6px;">建筑名称</div>
+                <input class="form-input" name="name" placeholder="例如：XX小区1号楼">
+            </div>
+            <div>
+                <div style="opacity:0.75; font-size:12px; margin-bottom:6px;">建筑类型</div>
+                <input class="form-input" name="type" placeholder="例如：住宅/学校/医院">
+            </div>
+            <div>
+                <div style="opacity:0.75; font-size:12px; margin-bottom:6px;">建筑年龄（年）</div>
+                <input class="form-input" name="age" type="number" min="0" value="0">
+            </div>
+        </div>
+
+        <div>
+            <div style="opacity:0.75; font-size:12px; margin-bottom:6px;">地址</div>
+            <input class="form-input" name="address" placeholder="例如：某省某市某区...">
+        </div>
+
+        <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:12px;">
+            <div>
+                <div style="opacity:0.75; font-size:12px; margin-bottom:6px;">裂缝情况</div>
+                <select class="form-input" name="cracks">
+                    <option value="无">无</option>
+                    <option value="轻微">轻微</option>
+                    <option value="中等">中等</option>
+                    <option value="严重">严重</option>
+                </select>
+            </div>
+            <div>
+                <div style="opacity:0.75; font-size:12px; margin-bottom:6px;">倾斜情况</div>
+                <select class="form-input" name="tilt">
+                    <option value="无">无</option>
+                    <option value="轻微">轻微</option>
+                    <option value="中等">中等</option>
+                    <option value="严重">严重</option>
+                </select>
+            </div>
+            <div>
+                <div style="opacity:0.75; font-size:12px; margin-bottom:6px;">地基稳定性</div>
+                <select class="form-input" name="foundation">
+                    <option value="良好">良好</option>
+                    <option value="一般">一般</option>
+                    <option value="较差">较差</option>
+                    <option value="危险">危险</option>
+                </select>
+            </div>
+            <div>
+                <div style="opacity:0.75; font-size:12px; margin-bottom:6px;">结构完整性</div>
+                <select class="form-input" name="structure">
+                    <option value="完好">完好</option>
+                    <option value="轻微">轻微</option>
+                    <option value="中等">中等</option>
+                    <option value="严重">严重</option>
+                </select>
+            </div>
+            <div>
+                <div style="opacity:0.75; font-size:12px; margin-bottom:6px;">评估等级（可选）</div>
+                <select class="form-input" name="status_level">
+                    <option value="">自动计算</option>
+                    <option value="1">1 轻微</option>
+                    <option value="2">2 中等</option>
+                    <option value="3">3 严重</option>
+                    <option value="4">4 危险</option>
+                </select>
+            </div>
+        </div>
+
+        <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(260px, 1fr)); gap:12px;">
+            <div>
+                <div style="opacity:0.75; font-size:12px; margin-bottom:6px;">人工评估意见（支持 Markdown，可选）</div>
+                <textarea class="form-input" name="analysis" rows="5" placeholder="例如：\n- 建议立即封闭危险区域\n- 联系专业机构做结构鉴定"></textarea>
+            </div>
+            <div>
+                <div style="opacity:0.75; font-size:12px; margin-bottom:6px;">备注（可选）</div>
+                <textarea class="form-input" name="notes" rows="5" placeholder="例如：现场照片已留存、已完成初筛等"></textarea>
+            </div>
+        </div>
+
+        <div style="display:flex; justify-content:flex-end;">
+            <button class="ai-btn ai-btn--primary" type="submit">新增人工测评</button>
+        </div>
+    </form>
+</div>
+
+<div style="height:12px;"></div>
+
+<div class="content-card">
+    <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap;">
+        <div style="font-size:16px; font-weight:800;">人工测评记录</div>
+        <div style="opacity:0.75; font-size:12px;">仅展示最近 80 条</div>
+    </div>
+    <div style="height:10px;"></div>
+
+    {% if assessments %}
+    <div style="overflow:auto;">
+        <table style="width:100%; border-collapse:collapse; min-width:960px;">
+            <thead>
+                <tr style="text-align:left; opacity:0.8; font-size:12px;">
+                    <th style="padding:10px; border-bottom:1px solid rgba(56, 189, 248, 0.22);">ID</th>
+                    <th style="padding:10px; border-bottom:1px solid rgba(56, 189, 248, 0.22);">用户</th>
+                    <th style="padding:10px; border-bottom:1px solid rgba(56, 189, 248, 0.22);">建筑</th>
+                    <th style="padding:10px; border-bottom:1px solid rgba(56, 189, 248, 0.22);">等级</th>
+                    <th style="padding:10px; border-bottom:1px solid rgba(56, 189, 248, 0.22);">评估人</th>
+                    <th style="padding:10px; border-bottom:1px solid rgba(56, 189, 248, 0.22);">日期</th>
+                    <th style="padding:10px; border-bottom:1px solid rgba(56, 189, 248, 0.22);">操作</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for a in assessments %}
+                <tr>
+                    <td style="padding:10px; border-bottom:1px solid rgba(56, 189, 248, 0.14); opacity:0.85;">{{ a.id }}</td>
+                    <td style="padding:10px; border-bottom:1px solid rgba(56, 189, 248, 0.14);">
+                        {% if a.user_id %}#{{ a.user_id }}{% else %}-{% endif %}
+                    </td>
+                    <td style="padding:10px; border-bottom:1px solid rgba(56, 189, 248, 0.14);">
+                        <div style="font-weight:800;">{{ a.name }}</div>
+                        <div style="opacity:0.75; font-size:12px;">{{ a.address }}</div>
+                    </td>
+                    <td style="padding:10px; border-bottom:1px solid rgba(56, 189, 248, 0.14);">{{ a.status }} ({{ a.status_level }})</td>
+                    <td style="padding:10px; border-bottom:1px solid rgba(56, 189, 248, 0.14);">{{ a.assessor }}</td>
+                    <td style="padding:10px; border-bottom:1px solid rgba(56, 189, 248, 0.14);">{{ a.assessment_date }}</td>
+                    <td style="padding:10px; border-bottom:1px solid rgba(56, 189, 248, 0.14);">
+                        <form method="POST" action="{{ url_for('admin_manual_assessments') }}" onsubmit="return confirm('确认删除该人工测评记录？');">
+                            <input type="hidden" name="action" value="delete">
+                            <input type="hidden" name="assessment_id" value="{{ a.id }}">
+                            <button class="ai-btn" type="submit">删除</button>
+                        </form>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+        <div style="opacity:0.75;">暂无人工测评记录</div>
+    {% endif %}
+</div>
+{% endblock %}

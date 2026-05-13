@@ -1,0 +1,1351 @@
+{% extends "base.html" %}
+
+{% block title %}地图展示 - 灾情管理系统{% endblock %}
+
+{% block header_title %}地图展示{% endblock %}
+
+{% block additional_styles %}
+    <style>
+        .map-header {
+            padding: 20px;
+            background: #FFFFFF;
+            border: 1px solid rgba(56, 189, 248, 0.22);
+            border-radius: 24px;
+            margin-bottom: 20px;
+            box-shadow: 0 14px 38px rgba(56, 189, 248, 0.18);
+        }
+        .filter-group {
+            display: flex;
+            gap: 20px;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        .filter-group label {
+            font-weight: bold;
+        }
+        #container {
+            width: 100%;
+            height: 60vh;
+            border-radius: 24px;
+            box-shadow: 0 18px 46px rgba(56, 189, 248, 0.24);
+        }
+        .legend {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(255, 255, 255, 0.82);
+            border: 1px solid rgba(56, 189, 248, 0.22);
+            backdrop-filter: blur(14px);
+            padding: 15px;
+            border-radius: 24px;
+            box-shadow: 0 18px 46px rgba(56, 189, 248, 0.24);
+            z-index: 100;
+        }
+        .legend-item {
+            display: flex;
+            align-items: center;
+            margin: 5px 0;
+        }
+        .legend-color {
+            width: 20px;
+            height: 20px;
+            margin-right: 10px;
+            border-radius: 4px;
+        }
+        .stats-panel {
+            margin-top: 20px;
+            padding: 20px;
+            background: #FFFFFF;
+            border: 1px solid rgba(56, 189, 248, 0.22);
+            border-radius: 24px;
+            box-shadow: 0 14px 38px rgba(56, 189, 248, 0.18);
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+        }
+        .stat-item {
+            background: #FFFFFF;
+            border: 1px solid rgba(56, 189, 248, 0.18);
+            padding: 15px;
+            border-radius: 24px;
+            text-align: center;
+            transition: transform 0.18s ease, box-shadow 0.18s ease;
+        }
+        .stat-item:hover {
+            transform: translateY(-2px) scale(1.01);
+            box-shadow: 0 18px 46px rgba(56, 189, 248, 0.24);
+        }
+        .stat-value {
+            font-size: 1.5em;
+            font-weight: bold;
+            color: #001F5B;
+        }
+        .quake-info-card {
+            margin-top: 20px;
+            padding: 20px;
+            background: #FFFFFF;
+            border: 1px solid rgba(56, 189, 248, 0.22);
+            border-radius: 24px;
+            box-shadow: 0 14px 38px rgba(56, 189, 248, 0.18);
+            line-height: 1.5;
+        }
+        .quake-info-card h4 {
+            margin-bottom: 10px;
+            color: #001F5B;
+        }
+        .quake-meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            font-size: 0.95em;
+            color: #2B5AA8;
+        }
+        .quake-meta span {
+            background: rgba(56, 189, 248, 0.10);
+            border: 1px solid rgba(56, 189, 248, 0.22);
+            padding: 6px 10px;
+            border-radius: 18px;
+        }
+        .quake-actions {
+            margin-top: 15px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        .quake-action-btn {
+            padding: 8px 14px;
+            border-radius: 18px;
+            border: 1px solid rgba(56, 189, 248, 0.22);
+            cursor: pointer;
+            color: #001F5B;
+            background: linear-gradient(135deg, #A3E635 0%, #38BDF8 100%);
+            box-shadow: 0 14px 38px rgba(56, 189, 248, 0.18);
+            transition: transform 0.18s ease, box-shadow 0.18s ease;
+        }
+        .quake-action-btn:hover {
+            transform: translateY(-2px) scale(1.01);
+            box-shadow: 0 18px 46px rgba(56, 189, 248, 0.24);
+        }
+        .quake-action-btn.secondary {
+            background: linear-gradient(135deg, #38BDF8 0%, #A3E635 100%);
+        }
+        .comparison-grid {
+            margin-top: 10px;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 12px;
+        }
+        .comparison-item {
+            background: #FFFFFF;
+            border: 1px solid rgba(56, 189, 248, 0.18);
+            border-radius: 24px;
+            padding: 12px;
+            border-left: 4px solid #007bff;
+        }
+        .comparison-item strong {
+            display: block;
+            margin-bottom: 6px;
+            color: #001F5B;
+        }
+        .comparison-stats {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.9em;
+        }
+        .comparison-stats span {
+            display: block;
+        }
+        .value-before {
+            color: #2B5AA8;
+        }
+        .value-after {
+            color: #A3E635;
+            font-weight: 600;
+        }
+        .building-comparison {
+            margin-top: 20px;
+            padding: 15px;
+            background: #FFFFFF;
+            border: 1px solid rgba(56, 189, 248, 0.22);
+            border-radius: 24px;
+            box-shadow: 0 14px 38px rgba(56, 189, 248, 0.18);
+        }
+        .building-comparison h5 {
+            margin-bottom: 15px;
+            color: #001F5B;
+            font-size: 1.1em;
+        }
+        .building-stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        .building-stat-card {
+            background: #FFFFFF;
+            border: 1px solid rgba(56, 189, 248, 0.18);
+            padding: 12px;
+            border-radius: 24px;
+            border-left: 4px solid #007bff;
+        }
+        .building-stat-card.damaged {
+            border-left-color: #ffc107;
+        }
+        .building-stat-card.collapsed {
+            border-left-color: #dc3545;
+        }
+        .building-stat-card.safe {
+            border-left-color: #28a745;
+        }
+        .building-stat-label {
+            font-size: 0.85em;
+            color: #2B5AA8;
+            margin-bottom: 5px;
+        }
+        .building-stat-value {
+            font-size: 1.4em;
+            font-weight: bold;
+            color: #001F5B;
+        }
+        .building-progress-bar {
+            width: 100%;
+            height: 8px;
+            background: rgba(56, 189, 248, 0.18);
+            border-radius: 999px;
+            overflow: hidden;
+            margin-top: 8px;
+        }
+        .building-progress-fill {
+            height: 100%;
+            transition: width 0.3s ease;
+        }
+        .building-progress-fill.safe {
+            background: #A3E635;
+        }
+        .building-progress-fill.damaged {
+            background: #F59E0B;
+        }
+        .building-progress-fill.collapsed {
+            background: #EF4444;
+        }
+        .building-comparison-images {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-top: 15px;
+        }
+        .building-image-container {
+            position: relative;
+            border-radius: 24px;
+            overflow: hidden;
+            box-shadow: 0 14px 38px rgba(56, 189, 248, 0.18);
+            border: 1px solid rgba(56, 189, 248, 0.18);
+        }
+        .building-image-container img {
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+            display: block;
+        }
+        .building-image-label {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: rgba(255, 255, 255, 0.82);
+            color: #001F5B;
+            padding: 8px;
+            text-align: center;
+            font-size: 0.9em;
+            backdrop-filter: blur(10px);
+            border-top: 1px solid rgba(56, 189, 248, 0.18);
+        }
+        .building-placeholder {
+            width: 100%;
+            height: 200px;
+            background: linear-gradient(135deg, #A3E635 0%, #38BDF8 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #001F5B;
+            font-size: 1.1em;
+            border-radius: 24px;
+        }
+        .comparison-images-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-top: 20px;
+        }
+        .comparison-image-card {
+            background: #FFFFFF;
+            border: 1px solid rgba(56, 189, 248, 0.22);
+            border-radius: 24px;
+            padding: 15px;
+            box-shadow: 0 14px 38px rgba(56, 189, 248, 0.18);
+        }
+        .comparison-image-card h5 {
+            margin-bottom: 12px;
+            color: #001F5B;
+            font-size: 1em;
+        }
+        .comparison-image-container {
+            width: 100%;
+            height: 250px;
+            background: rgba(56, 189, 248, 0.08);
+            border-radius: 24px;
+            margin-bottom: 12px;
+            overflow: hidden;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .comparison-image-container img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .comparison-image-info {
+            font-size: 0.85em;
+            color: rgba(255,255,255,0.75);
+            line-height: 1.6;
+        }
+        .comparison-image-info p {
+            margin: 4px 0;
+        }
+        .change-analysis-section {
+            margin-top: 20px;
+            padding: 15px;
+            background: rgba(17, 24, 39, 0.55);
+            border: 1px solid rgba(255,255,255,0.10);
+            backdrop-filter: blur(10px);
+            border-radius: 8px;
+        }
+        .change-analysis-section h5 {
+            margin-bottom: 15px;
+            color: rgba(255,255,255,0.92);
+            font-size: 1.1em;
+        }
+        .change-analysis-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 12px;
+        }
+        .change-analysis-item {
+            padding: 12px;
+            background: #FFFFFF;
+            border: 1px solid rgba(56, 189, 248, 0.18);
+            border-radius: 24px;
+            border-left: 4px solid #007bff;
+        }
+        .change-analysis-item.damaged {
+            border-left-color: #ffc107;
+        }
+        .change-analysis-item.road {
+            border-left-color: #17a2b8;
+        }
+        .change-analysis-item.vegetation {
+            border-left-color: #28a745;
+        }
+        .change-analysis-item.terrain {
+            border-left-color: #dc3545;
+        }
+        .change-analysis-label {
+            font-size: 0.85em;
+            color: #2B5AA8;
+            margin-bottom: 5px;
+        }
+        .change-analysis-value {
+            font-size: 1.2em;
+            font-weight: bold;
+            color: #001F5B;
+        }
+    </style>
+{% endblock %}
+
+{% block content %}
+
+    <!-- 搜索与筛选面板 -->
+    <div class="map-header">
+        <form method="GET" id="search-form">
+            <div class="filter-group">
+                <label>图层选择：</label>
+                {% for layer_id, layer_info in LAYERS.items() %}
+                    <label>
+                        <input type="checkbox" name="layer" value="{{ layer_id }}" 
+                               {% if layer_id in layers %}checked{% endif %}>
+                        {{ layer_info.label }}
+                    </label>
+                {% endfor %}
+            </div>
+            <div class="filter-group">
+                <label>时间范围：</label>
+                <input type="date" name="date" value="{{ selected_date or '' }}" style="padding: 8px;">
+            </div>
+            <div class="filter-group">
+                <label>搜索位置：</label>
+                <input type="text" name="location" value="{{ selected_location or '' }}" placeholder="如：海南、成都" style="padding: 8px; width: 200px;">
+                <button type="submit" style="padding: 8px 16px; background: #007bff; color: white; border: none; border-radius: 4px;">搜索</button>
+            </div>
+            <div class="filter-group">
+                <label>历史地震：</label>
+                <select id="quake-selector" style="padding: 8px; min-width: 240px;">
+                    <option value="">请选择历史地震事件</option>
+                    {% for quake in earthquakes %}
+                        <option value="{{ quake.id }}">{{ quake.name }} ｜ {{ quake.region }}</option>
+                    {% endfor %}
+                </select>
+                <button type="button" onclick="focusSelectedQuake()" style="padding: 8px 12px; background: #17a2b8; color: #fff; border: none; border-radius: 4px;">定位震中</button>
+            </div>
+        <!-- 在搜索面板下方添加按钮 -->
+            <div class="filter-group">
+                <!-- 替换原来的“确定”按钮 -->
+                <button type="button" onclick="confirmSimulateEarthquake()" style="padding: 8px 16px; background: #007bff; color: white; border: none; border-radius: 4px;">
+                    确定
+                </button>
+                <button type="button" onclick="disableSimulateMode()" style="padding: 8px 16px; margin-left: 10px; background: #38BDF8; color: #001F5B; border: none; border-radius: 18px;">
+                    取消模拟
+                </button>
+            </div>
+                     <!-- 在搜索面板下方添加模态框 -->
+            <div class="simulate-modal" style="display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 20px; border-radius: 24px; box-shadow: 0 14px 38px rgba(56, 189, 248, 0.22); border: 1px solid rgba(56, 189, 248, 0.18); z-index: 1000;">
+                <h4>模拟新地震</h4>
+                <p>请输入震级（3.0 ~ 8.0）：</p>
+                <input type="number" id="simulate-magnitude" value="5.0" min="3.0" max="8.0" step="0.1" style="width: 100%; padding: 8px; margin-bottom: 10px;">
+                <div style="display: flex; gap: 10px;">
+                    <button type="button" onclick="confirmSimulateEarthquake()">确定</button>
+                    <button onclick="document.querySelector('.simulate-modal').style.display='none'">取消</button>
+                </div>
+            </div>
+
+            <!-- 在“模拟新地震”按钮上绑定打开模态框 -->
+            <button type="button" onclick="document.querySelector('.simulate-modal').style.display='block'" style="padding: 8px 16px; background: #28a745; color: white; border: none; border-radius: 4px;">
+                🌋 模拟新地震
+            </button>
+        </form>
+    </div>
+
+    <!-- 地图容器 -->
+    <div id="container" style="position: relative;">
+        <!-- 卫星图层切换按钮 -->
+        <div style="position: absolute; top: 10px; left: 10px; z-index: 1000; background: rgba(255,255,255,0.82); padding: 8px; border-radius: 18px; box-shadow: 0 14px 38px rgba(56, 189, 248, 0.22); border: 1px solid rgba(56, 189, 248, 0.18); backdrop-filter: blur(12px);">
+            <button type="button" id="satellite-toggle-btn" onclick="toggleSatelliteView()" 
+                style="padding: 6px 12px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 0.9em;">
+                🛰️ 卫星图
+            </button>
+        </div>
+    </div>
+
+    <!-- 图例 -->
+    <div class="legend">
+        <h4>图例</h4>
+        {% for layer_id, layer_info in LAYERS.items() %}
+            <div class="legend-item">
+                <div class="legend-color" style="background: {{ layer_info.color }};"></div>
+                <span>{{ layer_info.label }}</span>
+            </div>
+        {% endfor %}
+    </div>
+    <div class="quake-info-card" id="selected-quake-card">
+        <h4>🎯 地震详情</h4>
+        <p>请选择上方的历史地震，我们会自动定位并显示震情概览。</p>
+    </div>
+    <div class="quake-info-card" id="quake-comparison">
+        <h4>📊 地震前后对比</h4>
+        <p>暂未选择地震，无法展示对比数据。</p>
+    </div>
+    <div style="margin-top: 20px; padding: 20px; background: #FFFFFF; border-radius: 24px; border: 1px solid rgba(56, 189, 248, 0.22); box-shadow: 0 14px 38px rgba(56, 189, 248, 0.18);">
+        <h4>📍 避难路线规划</h4>
+        <p>点击地图任意位置作为 <strong>起点</strong>，系统将规划到最近避难所的路线。</p>
+        <div>
+            <button type="button" onclick="enableRouteMode('walking')" style="margin-right: 10px;">🚶 步行路线</button>
+            <button type="button" onclick="enableRouteMode('driving')" style="margin-right: 10px;">🚗 驾车路线</button>
+            <button type="button" onclick="disableRouteMode()">取消</button>
+        </div>
+        <div id="route-result" style="margin-top: 15px; min-height: 60px;">
+        </div>
+    </div>
+    <!-- 区域概况 -->
+    <div class="stats-panel">
+        <div class="stat-item">
+            <div>受灾面积:</div>
+            <div class="stat-value">{{ stats.total_area }} 平方公里</div>
+        </div>
+        <div class="stat-item">
+            <div>救援点位:</div>
+            <div class="stat-value">{{ stats.total_rescue }} 个</div>
+        </div>
+        <div class="stat-item">
+            <div>避难场所:</div>
+            <div class="stat-value">{{ stats.total_shelters }} 处</div>
+        </div>
+        <div class="stat-item">
+            <div>医疗设施:</div>
+            <div class="stat-value">{{ stats.total_medical }} 处</div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block scripts %}
+    <script>
+        window._AMapSecurityConfig = { securityJsCode: "{{ amap_security_code }}" };
+    </script>
+    <script type="text/javascript" src="https://webapi.amap.com/maps?v=2.0&key={{ amap_key }}&plugin=AMap.Marker,AMap.Polygon,AMap.InfoWindow,AMap.Walking,AMap.Driving,AMap.Circle,AMap.Geocoder,AMap.TileLayer"></script>
+
+    <script>
+        // 全局错误处理：过滤不相关的第三方CORS错误
+        (function() {
+            'use strict';
+            
+            // 过滤控制台中的CORS错误
+            const originalConsoleError = console.error;
+            console.error = function(...args) {
+                const message = args.join(' ');
+                // 忽略来自第三方服务（如广告服务）的CORS错误
+                if (message.includes('CORS') && (
+                    message.includes('lenovo.com.cn') ||
+                    message.includes('dsp.lenovo') ||
+                    message.includes('Access-Control-Allow-Origin')
+                )) {
+                    // 静默处理，不输出到控制台
+                    return;
+                }
+                // 其他错误正常输出
+                originalConsoleError.apply(console, args);
+            };
+
+            // 全局错误事件监听
+            window.addEventListener('error', function(event) {
+                if (event.message && (
+                    event.message.includes('CORS') || 
+                    event.message.includes('lenovo.com.cn') ||
+                    event.message.includes('dsp.lenovo') ||
+                    event.message.includes('Access-Control-Allow-Origin')
+                )) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    return false;
+                }
+            }, true);
+
+            // 过滤未捕获的Promise错误
+            window.addEventListener('unhandledrejection', function(event) {
+                if (event.reason && (
+                    event.reason.message && (
+                        event.reason.message.includes('CORS') ||
+                        event.reason.message.includes('lenovo.com.cn') ||
+                        event.reason.message.includes('dsp.lenovo')
+                    )
+                )) {
+                    event.preventDefault();
+                }
+            });
+        })();
+
+        // 初始化地图
+        const map = new AMap.Map('container', {
+            zoom: 6,
+            center: [105.0, 35.0],
+            zoomEnable: true,
+            scrollWheel: true
+        });
+        const earthquakeDataset = {{ earthquakes|tojson }};
+        const quakeSelectorEl = document.getElementById('quake-selector');
+        const quakeInfoCard = document.getElementById('selected-quake-card');
+        const comparisonPanel = document.getElementById('quake-comparison');
+        const routeResultEl = document.getElementById('route-result');
+        window.simulateMagnitude = 5.0;
+        if (quakeSelectorEl) {
+            quakeSelectorEl.addEventListener('change', function(e) {
+                handleQuakeSelection(e.target.value);
+            });
+        }
+        let selectedQuake = null;
+        let selectedEpicenterCircle = null;
+
+        // 添加错误监听
+        map.on('error', function(err) {
+            console.error("地图加载失败:", err);
+            alert("地图初始化失败，请检查网络或高德密钥是否正确！");
+        });
+        // 清除现有标记和多边形
+        let markers = [];
+        let polygons = [];
+
+        function clearMap() {
+            markers.forEach(m => m.setMap(null));
+            polygons.forEach(p => p.setMap(null));
+            markers = [];
+            polygons = [];
+        }
+        // 添加地震点标记
+        function addEarthquakeMarkers(quakes) {
+            quakes.forEach(quake => {
+                // 添加救援点位（绿色标记）
+                if ({{ ('rescue_point' in layers)|lower }}) {
+                    for (let i = 1; i <= quake.rescue_points; i++) {
+                        const marker = new AMap.Marker({
+                            position: [quake.lng, quake.lat + (i * 0.001)], // 微调避免重叠
+                            title: `${quake.name} - 救援点${i}`,
+                            icon: "https://webapi.amap.com/theme/v1.3/markers/n/mark_g.png",
+                            offset: new AMap.Pixel(-10, -10)
+                        });
+                        marker.on('click', function() {
+                            new AMap.InfoWindow({
+                                content: `<div style="padding:8px;"><strong>${quake.name}</strong><br>类型: 救援点<br>位置: ${quake.region}</div>`,
+                                offset: new AMap.Pixel(0, -10)
+                            }).open(map, marker.getPosition());
+                        });
+                        marker.setMap(map);
+                        markers.push(marker);
+                    }
+                }
+
+                // 添加避难场所（蓝色标记）
+                if ({{ ('shelter' in layers)|lower }}) {
+                    for (let i = 1; i <= quake.shelters; i++) {
+                        const marker = new AMap.Marker({
+                            position: [quake.lng + 0.001, quake.lat + (i * 0.001)],
+                            title: `${quake.name} - 避难所${i}`,
+                            icon: "https://webapi.amap.com/theme/v1.3/markers/n/mark_b.png",
+                            offset: new AMap.Pixel(-10, -10)
+                        });
+                        marker.on('click', function() {
+                            new AMap.InfoWindow({
+                                content: `<div style="padding:8px;"><strong>${quake.name}</strong><br>类型: 避难场所<br>位置: ${quake.region}</div>`,
+                                offset: new AMap.Pixel(0, -10)
+                            }).open(map, marker.getPosition());
+                        });
+                        marker.setMap(map);
+                        markers.push(marker);
+                    }
+                }
+
+                // 添加医疗设施（橙色标记）
+                if ({{ ('medical' in layers)|lower }}) {
+                    for (let i = 1; i <= quake.medical_facilities; i++) {
+                        const marker = new AMap.Marker({
+                            position: [quake.lng - 0.001, quake.lat + (i * 0.001)],
+                            title: `${quake.name} - 医疗设施${i}`,
+                            icon: "https://webapi.amap.com/theme/v1.3/markers/n/mark_o.png",
+                            offset: new AMap.Pixel(-10, -10)
+                        });
+                        marker.on('click', function() {
+                            new AMap.InfoWindow({
+                                content: `<div style="padding:8px;"><strong>${quake.name}</strong><br>类型: 医疗设施<br>位置: ${quake.region}</div>`,
+                                offset: new AMap.Pixel(0, -10)
+                            }).open(map, marker.getPosition());
+                        });
+                        marker.setMap(map);
+                        markers.push(marker);
+                    }
+                }
+
+                // 添加受灾区域（红色多边形）
+                if ({{ ('affected_area' in layers)|lower }}) {
+                    // 简化：用圆形表示受灾区域（实际可用多边形）
+                    const circle = new AMap.Circle({
+                        center: [quake.lng, quake.lat],
+                        radius: Math.sqrt(quake.affected_area_km2 * 1000000) / 2, // 转换为米
+                        fillColor: '#FF0000',
+                        fillOpacity: 0.3,
+                        strokeColor: '#FF0000',
+                        strokeWeight: 2
+                    });
+                    circle.setMap(map);
+                    polygons.push(circle);
+
+                    // 添加点击事件
+                    circle.on('click', function() {
+                        new AMap.InfoWindow({
+                            content: `<div style="padding:8px;"><strong>${quake.name}</strong><br>震级: ${quake.magnitude}<br>日期: ${quake.date}<br>区域: ${quake.region}</div>`,
+                            offset: new AMap.Pixel(0, -10)
+                        }).open(map, circle.getCenter());
+                    });
+                }
+            });
+        }
+
+        // 初始加载
+        document.addEventListener('DOMContentLoaded', function() {
+            // 等待地图加载完成
+            map.on('complete', function() {
+                clearMap();
+                addEarthquakeMarkers(earthquakeDataset);
+                // 预收集避难所位置
+                collectShelters();
+            });
+            
+            // 如果地图已经加载完成，直接执行
+            if (map.getStatus() === 'complete') {
+                clearMap();
+                addEarthquakeMarkers(earthquakeDataset);
+                collectShelters();
+            }
+        });
+
+        // 搜索表单提交时刷新地图
+        document.getElementById('search-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const formData = new FormData(this);
+            const params = new URLSearchParams();
+            for (const [key, value] of formData.entries()) {
+                if (Array.isArray(value)) {
+                    value.forEach(v => params.append(key, v));
+                } else {
+                    params.append(key, value);
+                }
+            }
+            window.location.href = '/map?' + params.toString();
+        });
+
+
+
+            // ====== 在 <script> 中添加 ======
+        let simulateMode = false;
+        let simulateMarker = null;
+
+        function confirmSimulateEarthquake() {
+            const modal = document.querySelector('.simulate-modal');
+            const magnitudeInput = document.getElementById('simulate-magnitude');
+            const magnitude = parseFloat(magnitudeInput ? magnitudeInput.value : window.simulateMagnitude) || 5.0;
+            window.simulateMagnitude = Math.min(Math.max(magnitude, 3.0), 8.0);
+            if (modal) {
+                modal.style.display = 'none';
+            }
+            enableSimulateMode();
+        }
+
+        function enableSimulateMode() {
+            simulateMode = true;
+            map.setDefaultCursor("crosshair");
+            map.on('click', onMapClickForSimulation);
+            alert("已进入模拟模式：请点击地图任意位置生成地震");
+        }
+
+        function disableSimulateMode() {
+            simulateMode = false;
+            map.setDefaultCursor("default");
+            map.off('click', onMapClickForSimulation);
+            if (simulateMarker) {
+                simulateMarker.setMap(null);
+                simulateMarker = null;
+            }
+        }
+
+        function onMapClickForSimulation(e) {
+            if (!simulateMode) return;
+
+            const lng = e.lnglat.getLng();
+            const lat = e.lnglat.getLat();
+            const magnitude = window.simulateMagnitude || 5.0; // 默认 5.0
+
+            // 生成模拟地震对象
+            const name = `模拟地震（${magnitude}级）`;
+            const region = "模拟位置";
+
+            // 根据震级估算房屋数据
+            const baseBuildings = Math.max(1000, Math.round(magnitude * 1000));
+            const damageRate = Math.min(0.6, magnitude / 12.0);
+            const collapseRate = Math.min(0.15, magnitude / 20.0);
+            const damagedBuildings = Math.round(baseBuildings * damageRate);
+            const collapsedBuildings = Math.round(baseBuildings * collapseRate);
+            const safeBuildings = baseBuildings - damagedBuildings;
+            
+            const simulatedQuake = {
+                id: `sim_${Date.now()}`,
+                name: name,
+                lat: lat,
+                lng: lng,
+                magnitude: magnitude,
+                date: new Date().toISOString().slice(0, 10),
+                region: region,
+                severity: magnitude >= 6.0 ? '严重' : (magnitude >= 5.0 ? '中度' : '轻度'),
+                affected_area_km2: Math.max(5.0, magnitude * 2.0),
+                rescue_points: Math.max(1, Math.floor(magnitude)),
+                shelters: Math.max(2, Math.floor(magnitude * 1.5)),
+                medical_facilities: Math.max(1, Math.floor(magnitude * 0.8)),
+                total_buildings: baseBuildings,
+                damaged_buildings: damagedBuildings,
+                collapsed_buildings: collapsedBuildings,
+                safe_buildings: safeBuildings,
+                before_image_url: '',
+                after_image_url: ''
+            };
+
+            // 清除旧标记
+            clearMap();
+
+            // 添加新地震点（复用 addEarthquakeMarkers）
+            addEarthquakeMarkers([simulatedQuake]);
+
+            // 添加中心标记
+            simulateMarker = new AMap.Marker({
+                position: [lng, lat],
+                title: name,
+                icon: "https://webapi.amap.com/theme/v1.3/markers/n/mark_r.png",
+                offset: new AMap.Pixel(-10, -10)
+            });
+            simulateMarker.setMap(map);
+
+            // 自动启用所有图层并展示模拟地震详情
+            document.querySelectorAll('input[name="layer"]').forEach(cb => cb.checked = true);
+            selectedQuake = simulatedQuake;
+            highlightSelectedQuake(selectedQuake);
+            updateQuakeInfoCard(selectedQuake);
+            updateComparisonPanel(selectedQuake);
+            map.setZoomAndCenter(7, [lng, lat]);
+            document.getElementById('search-form').dispatchEvent(new Event('submit'));
+
+            // 退出模拟模式
+            disableSimulateMode();
+        }
+        function focusSelectedQuake() {
+            if (!selectedQuake) {
+                alert("请先选择历史地震事件");
+                return;
+            }
+            map.setZoomAndCenter(7, [selectedQuake.lng, selectedQuake.lat]);
+        }
+
+        function handleQuakeSelection(quakeId) {
+            if (!quakeId) {
+                selectedQuake = null;
+                highlightSelectedQuake(null);
+                updateQuakeInfoCard(null);
+                updateComparisonPanel(null);
+                return;
+            }
+            const target = earthquakeDataset.find(q => String(q.id) === String(quakeId));
+            selectedQuake = target || null;
+            if (selectedQuake) {
+                map.setZoomAndCenter(7, [selectedQuake.lng, selectedQuake.lat]);
+            }
+            highlightSelectedQuake(selectedQuake);
+            updateQuakeInfoCard(selectedQuake);
+            updateComparisonPanel(selectedQuake);
+        }
+
+        function highlightSelectedQuake(quake) {
+            if (selectedEpicenterCircle) {
+                selectedEpicenterCircle.setMap(null);
+                selectedEpicenterCircle = null;
+            }
+            if (!quake) return;
+            selectedEpicenterCircle = new AMap.Circle({
+                center: [quake.lng, quake.lat],
+                radius: 8000,
+                strokeColor: '#FF7043',
+                strokeWeight: 2,
+                strokeOpacity: 0.9,
+                fillColor: '#FFAB91',
+                fillOpacity: 0.2,
+                zIndex: 900
+            });
+            selectedEpicenterCircle.setMap(map);
+        }
+
+        function updateQuakeInfoCard(quake) {
+            if (!quakeInfoCard) return;
+            if (!quake) {
+                quakeInfoCard.innerHTML = `
+                    <h4>🎯 地震详情</h4>
+                    <p>请选择上方的历史地震，我们会自动定位并显示震情概览。</p>
+                `;
+                return;
+            }
+            quakeInfoCard.innerHTML = `
+                <h4>🎯 ${quake.name}</h4>
+                <div class="quake-meta">
+                    <span>震级：${quake.magnitude}</span>
+                    <span>区域：${quake.region}</span>
+                    <span>日期：${quake.date}</span>
+                    <span>救援点位：${quake.rescue_points}</span>
+                    <span>避难所：${quake.shelters}</span>
+                </div>
+                <div class="quake-actions">
+                    <button type="button" class="quake-action-btn" onclick="planRouteForSelectedQuake('walking')">震中步行路线</button>
+                    <button type="button" class="quake-action-btn secondary" onclick="planRouteForSelectedQuake('driving')">震中驾车路线</button>
+                </div>
+            `;
+        }
+
+        // 生成高德地图静态图URL（支持卫星图层）
+        function generateSatelliteImageUrl(lng, lat, zoom = 15, size = '600*400', isSatellite = false) {
+            const amapKey = '{{ amap_key }}';
+            // 高德地图静态图API
+            // 注意：高德静态图API本身不直接支持卫星图，但我们可以获取带标记的地图
+            // 实际卫星图需要通过地图图层切换功能查看
+            const baseUrl = `https://restapi.amap.com/v3/staticmap?location=${lng},${lat}&zoom=${zoom}&size=${size}&key=${amapKey}&scale=2`;
+            // 添加标记点
+            return `${baseUrl}&markers=mid,,A:${lng},${lat}`;
+        }
+        
+        // 创建卫星图层
+        let satelliteLayer = null;
+        let isSatelliteMode = false;
+        
+        function toggleSatelliteLayer() {
+            if (!satelliteLayer) {
+                satelliteLayer = new AMap.TileLayer.Satellite();
+                map.add(satelliteLayer);
+                isSatelliteMode = true;
+                return true;
+            } else {
+                map.remove(satelliteLayer);
+                satelliteLayer = null;
+                isSatelliteMode = false;
+                return false;
+            }
+        }
+        
+        // 切换卫星图视图
+        function toggleSatelliteView() {
+            const isOn = toggleSatelliteLayer();
+            const btn = document.getElementById('satellite-toggle-btn');
+            if (btn) {
+                if (isOn) {
+                    btn.innerHTML = '🗺️ 地图';
+                    btn.style.background = '#28a745';
+                } else {
+                    btn.innerHTML = '🛰️ 卫星图';
+                    btn.style.background = '#007bff';
+                }
+            }
+        }
+        
+        // 获取当前地图区域的截图URL（用于对比）
+        function getMapSnapshotUrl(lng, lat, zoom = 15) {
+            // 使用高德静态图API获取当前区域的地图
+            return generateSatelliteImageUrl(lng, lat, zoom, '600*400', false);
+        }
+
+        function updateComparisonPanel(quake) {
+            if (!comparisonPanel) return;
+            if (!quake) {
+                comparisonPanel.innerHTML = `
+                    <h4>📊 地震前后对比</h4>
+                    <p>暂未选择地震，无法展示对比数据。</p>
+                `;
+                return;
+            }
+            const areaBefore = (quake.affected_area_km2 * 0.6).toFixed(1);
+            const areaAfter = quake.affected_area_km2.toFixed(1);
+            const rescueBefore = Math.max(1, Math.round(quake.rescue_points * 0.5));
+            const rescueAfter = quake.rescue_points;
+            const medicalBefore = Math.max(1, Math.round(quake.medical_facilities * 0.7));
+            const medicalAfter = quake.medical_facilities;
+            
+            // 房屋数据（如果有的话，否则根据震级估算）
+            const totalBuildings = quake.total_buildings || Math.max(1000, Math.round(quake.magnitude * 1000));
+            const damagedBuildings = quake.damaged_buildings || Math.round(totalBuildings * Math.min(0.6, quake.magnitude / 12));
+            const collapsedBuildings = quake.collapsed_buildings || Math.round(totalBuildings * Math.min(0.15, quake.magnitude / 20));
+            const safeBuildings = quake.safe_buildings || (totalBuildings - damagedBuildings);
+            const buildingsBefore = totalBuildings; // 震前所有房屋完好
+            
+            const safePercent = ((safeBuildings / totalBuildings) * 100).toFixed(1);
+            const damagedPercent = ((damagedBuildings / totalBuildings) * 100).toFixed(1);
+            const collapsedPercent = ((collapsedBuildings / totalBuildings) * 100).toFixed(1);
+            
+            comparisonPanel.innerHTML = `
+                <h4>📊 ${quake.name} - 震前震后对比</h4>
+                <div class="comparison-grid">
+                    <div class="comparison-item">
+                        <strong>受灾面积 (km²)</strong>
+                        <div class="comparison-stats">
+                            <span class="value-before">震前 ${areaBefore}</span>
+                            <span class="value-after">震后 ${areaAfter}</span>
+                        </div>
+                    </div>
+                    <div class="comparison-item">
+                        <strong>救援力量 (站)</strong>
+                        <div class="comparison-stats">
+                            <span class="value-before">震前 ${rescueBefore}</span>
+                            <span class="value-after">震后 ${rescueAfter}</span>
+                        </div>
+                    </div>
+                    <div class="comparison-item">
+                        <strong>医疗资源 (处)</strong>
+                        <div class="comparison-stats">
+                            <span class="value-before">震前 ${medicalBefore}</span>
+                            <span class="value-after">震后 ${medicalAfter}</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="building-comparison">
+                    <h5>🏠 房屋状况对比</h5>
+                    <div class="building-stats-grid">
+                        <div class="building-stat-card safe">
+                            <div class="building-stat-label">完好房屋</div>
+                            <div class="building-stat-value">${safeBuildings.toLocaleString()}</div>
+                            <div class="building-progress-bar">
+                                <div class="building-progress-fill safe" style="width: ${safePercent}%"></div>
+                            </div>
+                            <div style="font-size: 0.8em; color: #2B5AA8; margin-top: 4px;">${safePercent}%</div>
+                        </div>
+                        <div class="building-stat-card damaged">
+                            <div class="building-stat-label">损坏房屋</div>
+                            <div class="building-stat-value">${damagedBuildings.toLocaleString()}</div>
+                            <div class="building-progress-bar">
+                                <div class="building-progress-fill damaged" style="width: ${damagedPercent}%"></div>
+                            </div>
+                            <div style="font-size: 0.8em; color: #2B5AA8; margin-top: 4px;">${damagedPercent}%</div>
+                        </div>
+                        <div class="building-stat-card collapsed">
+                            <div class="building-stat-label">倒塌房屋</div>
+                            <div class="building-stat-value">${collapsedBuildings.toLocaleString()}</div>
+                            <div class="building-progress-bar">
+                                <div class="building-progress-fill collapsed" style="width: ${collapsedPercent}%"></div>
+                            </div>
+                            <div style="font-size: 0.8em; color: #2B5AA8; margin-top: 4px;">${collapsedPercent}%</div>
+                        </div>
+                        <div class="building-stat-card">
+                            <div class="building-stat-label">房屋总数</div>
+                            <div class="building-stat-value">${totalBuildings.toLocaleString()}</div>
+                            <div style="font-size: 0.8em; color: #2B5AA8; margin-top: 8px;">
+                                震前: ${buildingsBefore.toLocaleString()} 完好
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="comparison-images-grid">
+                        <div class="comparison-image-card">
+                            <h5>📸 灾前卫星影像</h5>
+                            <div class="comparison-image-container">
+                                ${quake.before_image_url ? 
+                                    `<img src="${quake.before_image_url}" alt="灾前影像" onerror="this.onerror=null; this.src='${generateSatelliteImageUrl(quake.lng, quake.lat, 15, '600*400', 5)}'">` :
+                                    `<img src="${generateSatelliteImageUrl(quake.lng, quake.lat, 15, '600*400', 5)}" alt="灾前卫星影像" 
+                                        onerror="this.parentElement.innerHTML='<div style=\\'text-align:center;color:#2B5AA8;padding:40px;\\'><div style=\\'font-size:2em;margin-bottom:10px;\\'>🏘️</div><div>正在加载卫星影像...</div><div style=\\'font-size:0.85em;margin-top:5px;color:#2B5AA8;\\'>如果无法加载，请检查网络或API配置</div></div>'"
+                                        style="width: 100%; height: 100%; object-fit: cover;">
+                                    `
+                                }
+                            </div>
+                            <div class="comparison-image-info">
+                                <p><strong>拍摄时间:</strong> ${new Date(new Date(quake.date).getTime() - 5 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10)}</p>
+                                <p><strong>图像来源:</strong> 高德地图静态图API</p>
+                                <p><strong>坐标:</strong> ${quake.lng.toFixed(4)}, ${quake.lat.toFixed(4)}</p>
+                                <p><strong>区域:</strong> ${quake.region}</p>
+                                <p style="margin-top: 8px;">
+                                    <button type="button" onclick="viewSatelliteMap(${quake.lng}, ${quake.lat}, 15, 'before')" 
+                                        style="padding: 4px 8px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 0.85em;">
+                                        🛰️ 在地图上查看卫星图
+                                    </button>
+                                </p>
+                            </div>
+                        </div>
+                        <div class="comparison-image-card">
+                            <h5>📸 灾后卫星影像</h5>
+                            <div class="comparison-image-container">
+                                ${quake.after_image_url ? 
+                                    `<img src="${quake.after_image_url}" alt="灾后影像" onerror="this.onerror=null; this.src='${generateSatelliteImageUrl(quake.lng, quake.lat, 15, '600*400', false)}'">` :
+                                    `<img src="${generateSatelliteImageUrl(quake.lng, quake.lat, 15, '600*400', false)}" alt="灾后卫星影像"
+                                        onerror="this.parentElement.innerHTML='<div style=\\'text-align:center;color:#001F5B;padding:40px;background:linear-gradient(135deg, #A3E635 0%, #38BDF8 100%);width:100%;height:100%;display:flex;align-items:center;justify-content:center;flex-direction:column;\\'><div style=\\'font-size:2em;margin-bottom:10px;\\'>🏚️</div><div>正在加载卫星影像...</div><div style=\\'font-size:0.85em;margin-top:5px;opacity:0.9;\\'>完好率: ${safePercent}% | 损坏: ${damagedPercent}%</div></div>'"
+                                        style="width: 100%; height: 100%; object-fit: cover;">
+                                    `
+                                }
+                            </div>
+                            <div class="comparison-image-info">
+                                <p><strong>拍摄时间:</strong> ${quake.date}</p>
+                                <p><strong>图像来源:</strong> 高德地图静态图API</p>
+                                <p><strong>坐标:</strong> ${quake.lng.toFixed(4)}, ${quake.lat.toFixed(4)}</p>
+                                <p><strong>区域:</strong> ${quake.region}</p>
+                                <p style="margin-top: 8px;">
+                                    <button type="button" onclick="viewSatelliteMap(${quake.lng}, ${quake.lat}, 15, 'after')" 
+                                        style="padding: 4px 8px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 0.85em;">
+                                        🛰️ 在地图上查看卫星图
+                                    </button>
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="change-analysis-section">
+                        <h5>📊 变化分析</h5>
+                        <div class="change-analysis-grid">
+                            <div class="change-analysis-item damaged">
+                                <div class="change-analysis-label">受损建筑</div>
+                                <div class="change-analysis-value">${damagedBuildings.toLocaleString()}栋</div>
+                            </div>
+                            <div class="change-analysis-item collapsed">
+                                <div class="change-analysis-label">倒塌建筑</div>
+                                <div class="change-analysis-value">${collapsedBuildings.toLocaleString()}栋</div>
+                            </div>
+                            <div class="change-analysis-item road">
+                                <div class="change-analysis-label">道路损毁</div>
+                                <div class="change-analysis-value">${Math.max(1, Math.round(damagedBuildings / 400))}条</div>
+                            </div>
+                            <div class="change-analysis-item vegetation">
+                                <div class="change-analysis-label">植被变化</div>
+                                <div class="change-analysis-value">-${Math.round(collapsedPercent * 2)}%</div>
+                            </div>
+                            <div class="change-analysis-item terrain">
+                                <div class="change-analysis-label">地形改变</div>
+                                <div class="change-analysis-value">${quake.magnitude >= 6.0 ? '显著' : (quake.magnitude >= 5.0 ? '中等' : '轻微')}</div>
+                            </div>
+                            <div class="change-analysis-item">
+                                <div class="change-analysis-label">受灾面积变化</div>
+                                <div class="change-analysis-value">+${((parseFloat(areaAfter) - parseFloat(areaBefore)) / parseFloat(areaBefore) * 100).toFixed(1)}%</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+            // ====== 路线规划变量 ======
+        let routeMode = null; // 'walking' or 'driving'
+        let startMarker = null;
+        let startCircle = null; // 红圈标记
+        let currentRouteInstance = null; // 当前路线规划实例
+        let shelterMarkers = []; // 避难所标记
+        let allShelters = []; // 所有避难所位置
+
+        // 初始化：收集所有避难所位置
+        function collectShelters() {
+            allShelters = [];
+            try {
+                const earthquakes = earthquakeDataset;
+                const shelterLayerEnabled = {{ ('shelter' in layers)|lower }};
+                
+                earthquakes.forEach(quake => {
+                    if (shelterLayerEnabled && quake.shelters) {
+                        for (let i = 1; i <= quake.shelters; i++) {
+                            allShelters.push({
+                                lng: quake.lng + 0.001,
+                                lat: quake.lat + (i * 0.001),
+                                name: `${quake.name} - 避难所${i}`,
+                                region: quake.region || '未知地区'
+                            });
+                        }
+                    }
+                });
+            } catch (e) {
+                console.error('收集避难所位置失败:', e);
+            }
+            
+            // 如果没有避难所，使用默认位置（基于地图中心）
+            if (allShelters.length === 0) {
+                const center = map.getCenter();
+                allShelters = [
+                    {
+                        lng: center.getLng() + 0.005, 
+                        lat: center.getLat() + 0.005, 
+                        name: '默认避难所1', 
+                        region: '默认区域'
+                    },
+                    {
+                        lng: center.getLng() - 0.005, 
+                        lat: center.getLat() - 0.005, 
+                        name: '默认避难所2', 
+                        region: '默认区域'
+                    }
+                ];
+            }
+        }
+
+        function enableRouteMode(mode) {
+            routeMode = mode;
+            map.setDefaultCursor("crosshair");
+            map.on('click', onMapClickForRoute);
+            if (routeResultEl) {
+                routeResultEl.innerHTML = `<p style="color: #007bff;">📍 请点击地图选择起点，我们将为您规划路线。</p>`;
+            }
+            collectShelters();
+            showShelters();
+        }
+
+        function disableRouteMode() {
+            routeMode = null;
+            map.setDefaultCursor("default");
+            map.off('click', onMapClickForRoute);
+            resetRouteArtifacts();
+            hideShelters();
+            if (routeResultEl) {
+                routeResultEl.innerHTML = '';
+            }
+        }
+
+        function resetRouteArtifacts() {
+            if (startMarker) {
+                startMarker.setMap(null);
+                startMarker = null;
+            }
+            if (startCircle) {
+                startCircle.setMap(null);
+                startCircle = null;
+            }
+            if (currentRouteInstance) {
+                currentRouteInstance.clear();
+                currentRouteInstance = null;
+            }
+        }
+
+        // 显示避难所标记
+        function showShelters() {
+            hideShelters(); // 先清除旧的
+            allShelters.forEach(shelter => {
+                const marker = new AMap.Marker({
+                    position: [shelter.lng, shelter.lat],
+                    title: shelter.name,
+                    icon: "https://webapi.amap.com/theme/v1.3/markers/n/mark_b.png",
+                    offset: new AMap.Pixel(-10, -10)
+                });
+                marker.setMap(map);
+                shelterMarkers.push(marker);
+            });
+        }
+
+        // 隐藏避难所标记
+        function hideShelters() {
+            shelterMarkers.forEach(m => m.setMap(null));
+            shelterMarkers = [];
+        }
+
+        // 计算最近避难所
+        function findNearestShelter(startLng, startLat) {
+            let nearest = null;
+            let minDistance = Infinity;
+            
+            allShelters.forEach(shelter => {
+                const distance = Math.sqrt(
+                    Math.pow(shelter.lng - startLng, 2) + 
+                    Math.pow(shelter.lat - startLat, 2)
+                );
+                if (distance < minDistance) {
+                    minDistance = distance;
+                    nearest = shelter;
+                }
+            });
+            
+            return nearest || allShelters[0];
+        }
+
+        function onMapClickForRoute(e) {
+            if (!routeMode) return;
+            const startLng = e.lnglat.getLng();
+            const startLat = e.lnglat.getLat();
+            planRouteFromPoint(startLng, startLat, routeMode, "自选起点");
+        }
+
+        function planRouteFromPoint(startLng, startLat, mode, label = '起点') {
+            if (!mode) {
+                alert("请先选择路线模式");
+                return;
+            }
+
+            if (!allShelters.length) {
+                collectShelters();
+            }
+            if (!allShelters.length) {
+                if (routeResultEl) {
+                    routeResultEl.innerHTML = `<p style="color: #dc3545;">当前缺少避难所数据，无法规划路线。</p>`;
+                }
+                return;
+            }
+
+            resetRouteArtifacts();
+
+            startCircle = new AMap.Circle({
+                center: [startLng, startLat],
+                radius: 600,
+                fillColor: '#FF0000',
+                fillOpacity: 0.3,
+                strokeColor: '#FF0000',
+                strokeWeight: 3,
+                strokeOpacity: 0.8,
+                zIndex: 1000
+            });
+            startCircle.setMap(map);
+
+            startMarker = new AMap.Marker({
+                position: [startLng, startLat],
+                title: label,
+                icon: "https://webapi.amap.com/theme/v1.3/markers/n/mark_s.png",
+                offset: new AMap.Pixel(-10, -10)
+            });
+            startMarker.setMap(map);
+
+            const nearestShelter = findNearestShelter(startLng, startLat);
+            if (!nearestShelter) {
+                if (routeResultEl) {
+                    routeResultEl.innerHTML = `<p style="color: #dc3545;">附近缺少避难所，无法规划路线。</p>`;
+                }
+                return;
+            }
+
+            if (routeResultEl) {
+            routeResultEl.innerHTML = `<p style="color: #2B5AA8;">🔄 正在规划以 <strong>${label}</strong> 为起点的路线...</p>`;
+            }
+
+            currentRouteInstance = mode === 'walking'
+                ? new AMap.Walking({ map: map, hideMarkers: false })
+                : new AMap.Driving({ map: map, hideMarkers: false, policy: AMap.DrivingPolicy.LEAST_TIME });
+
+            currentRouteInstance.search([startLng, startLat], [nearestShelter.lng, nearestShelter.lat], function(status, result) {
+                if (status === 'complete' && result.routes && result.routes.length > 0) {
+                    const routeObj = result.routes[0];
+                    const distance = (routeObj.distance / 1000).toFixed(1);
+                    const time = Math.max(1, Math.ceil(routeObj.time / 60));
+
+                    map.setFitView();
+
+                    if (routeResultEl) {
+                        routeResultEl.innerHTML = `
+                            <div style="background: #e7f3ff; padding: 10px; border-radius: 4px; border-left: 4px solid #007bff;">
+                                <p style="margin: 5px 0;"><strong>✅ 路线规划成功！</strong></p>
+                                <p style="margin: 5px 0;">📍 起点: ${label}</p>
+                                <p style="margin: 5px 0;">🏠 终点: ${nearestShelter.name}</p>
+                                <p style="margin: 5px 0;"><strong>距离:</strong> ${distance} 公里</p>
+                                <p style="margin: 5px 0;"><strong>预计用时:</strong> 约 ${time} 分钟</p>
+                                <p style="margin: 5px 0; color: #2B5AA8; font-size: 0.9em;">💡 路线已自动显示在地图上</p>
+                            </div>
+                        `;
+                    }
+                } else {
+                    if (routeResultEl) {
+                        routeResultEl.innerHTML = `
+                            <p style="color: #dc3545;">❌ 无法规划到避难所的路线，请尝试其它模式或起点。</p>
+                            <p style="color: #2B5AA8; font-size: 0.9em;">可能原因：起点过远或路线不可达</p>
+                        `;
+                    }
+                }
+            });
+        }
+
+        function planRouteForSelectedQuake(mode) {
+            if (!selectedQuake) {
+                alert("请先选择历史地震");
+                return;
+            }
+            planRouteFromPoint(selectedQuake.lng, selectedQuake.lat, mode, `${selectedQuake.name} 震中`);
+        }
+        
+        // 在地图上查看卫星图
+        function viewSatelliteMap(lng, lat, zoom, type) {
+            // 定位到指定坐标
+            map.setZoomAndCenter(zoom, [lng, lat]);
+            
+            // 切换卫星图层
+            if (!satelliteLayer) {
+                toggleSatelliteLayer();
+            }
+            
+            // 添加提示
+            const infoWindow = new AMap.InfoWindow({
+                content: `<div style="padding: 10px;">
+                    <strong>${type === 'before' ? '灾前' : '灾后'}卫星影像查看</strong><br>
+                    坐标: ${lng.toFixed(4)}, ${lat.toFixed(4)}<br>
+                    <small>当前已切换到卫星图层，您可以缩放和拖拽查看详细影像</small>
+                </div>`,
+                offset: new AMap.Pixel(0, -10)
+            });
+            infoWindow.open(map, [lng, lat]);
+            
+            // 3秒后自动关闭提示
+            setTimeout(() => {
+                infoWindow.close();
+            }, 3000);
+        }
+    </script>
+{% endblock %}

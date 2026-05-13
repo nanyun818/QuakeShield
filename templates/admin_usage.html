@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+
+{% block title %}管理员 - AI 用量{% endblock %}
+
+{% block header_title %}管理员后台：AI 用量{% endblock %}
+
+{% block content %}
+<div class="content-card">
+    <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap;">
+        <div style="font-size:16px; font-weight:800;">用量汇总</div>
+        <div style="display:flex; gap:10px; flex-wrap:wrap;">
+            <a class="ai-btn ai-btn--ghost" href="{{ url_for('admin_index') }}" style="text-decoration:none;">后台首页</a>
+            <a class="ai-btn ai-btn--ghost" href="{{ url_for('admin_users') }}" style="text-decoration:none;">用户管理</a>
+            <a class="ai-btn ai-btn--ghost" href="{{ url_for('admin_admins') }}" style="text-decoration:none;">管理员管理</a>
+            <a class="ai-btn ai-btn--ghost" href="{{ url_for('admin_manual_assessments') }}" style="text-decoration:none;">人工测评</a>
+            <a class="ai-btn ai-btn--ghost" href="{{ url_for('admin_config') }}" style="text-decoration:none;">系统配置</a>
+        </div>
+    </div>
+    <div style="height:10px;"></div>
+    {% if summary %}
+    <div style="overflow:auto;">
+        <table style="width:100%; border-collapse:collapse; min-width:560px;">
+            <thead>
+                <tr style="text-align:left; opacity:0.8; font-size:12px;">
+                    <th style="padding:10px; border-bottom:1px solid rgba(255,255,255,0.12);">用户</th>
+                    <th style="padding:10px; border-bottom:1px solid rgba(255,255,255,0.12);">调用次数</th>
+                    <th style="padding:10px; border-bottom:1px solid rgba(255,255,255,0.12);">累计 tokens</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for r in summary %}
+                <tr>
+                    <td style="padding:10px; border-bottom:1px solid rgba(255,255,255,0.08); font-weight:700;">{{ r.username }} <span style="opacity:0.7; font-weight:400;">(#{{ r.user_id }})</span></td>
+                    <td style="padding:10px; border-bottom:1px solid rgba(255,255,255,0.08);">{{ r.calls }}</td>
+                    <td style="padding:10px; border-bottom:1px solid rgba(255,255,255,0.08);">{{ r.tokens }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+        <div style="opacity:0.75;">暂无用量数据</div>
+    {% endif %}
+</div>
+{% endblock %}

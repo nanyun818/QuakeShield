@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+
+{% block title %}管理员后台 - 灾情管理系统{% endblock %}
+
+{% block header_title %}管理员后台{% endblock %}
+
+{% block content %}
+<div class="content-card">
+    <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap;">
+        <div style="font-size:16px; font-weight:800;">概览</div>
+        <div style="display:flex; gap:10px; flex-wrap:wrap;">
+            <a class="ai-btn ai-btn--ghost" href="{{ url_for('admin_users') }}" style="text-decoration:none;">用户管理</a>
+            <a class="ai-btn ai-btn--ghost" href="{{ url_for('admin_admins') }}" style="text-decoration:none;">管理员管理</a>
+            <a class="ai-btn ai-btn--ghost" href="{{ url_for('admin_manual_assessments') }}" style="text-decoration:none;">人工测评</a>
+            <a class="ai-btn ai-btn--ghost" href="{{ url_for('admin_config') }}" style="text-decoration:none;">系统配置</a>
+            <a class="ai-btn ai-btn--ghost" href="{{ url_for('admin_usage') }}" style="text-decoration:none;">AI 用量</a>
+        </div>
+    </div>
+    <div style="height:12px;"></div>
+
+    <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(220px, 1fr)); gap:12px;">
+        <div class="content-card" style="padding:14px;">
+            <div style="opacity:0.75; font-size:12px;">用户总数</div>
+            <div style="font-size:22px; font-weight:900;">{{ stats.total_users }}</div>
+        </div>
+        <div class="content-card" style="padding:14px;">
+            <div style="opacity:0.75; font-size:12px;">房屋评估总数</div>
+            <div style="font-size:22px; font-weight:900;">{{ stats.total_assessments }}</div>
+        </div>
+        <div class="content-card" style="padding:14px;">
+            <div style="opacity:0.75; font-size:12px;">人工测评</div>
+            <div style="font-size:22px; font-weight:900;">{{ stats.manual_assessments }}</div>
+        </div>
+        <div class="content-card" style="padding:14px;">
+            <div style="opacity:0.75; font-size:12px;">AI 调用记录</div>
+            <div style="font-size:22px; font-weight:900;">{{ stats.ai_calls }}</div>
+        </div>
+    </div>
+</div>
+{% endblock %}

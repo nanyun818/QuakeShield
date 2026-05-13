@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+
+{% block title %}个人中心 - 灾情管理系统{% endblock %}
+
+{% block header_title %}个人中心{% endblock %}
+
+{% block content %}
+<div class="content-card">
+    <div style="display:flex; gap:12px; flex-wrap:wrap; align-items:center; justify-content:space-between;">
+        <div>
+            <div style="font-size:18px; font-weight:800; color:#001F5B;">{{ current_user.username }}</div>
+            <div style="opacity:0.75; font-size:13px;">用户ID：{{ current_user.id }}</div>
+        </div>
+        <div style="display:flex; gap:10px; flex-wrap:wrap;">
+            {% if is_admin %}
+            <a class="ai-btn ai-btn--ghost" href="{{ url_for('admin_index') }}" style="text-decoration:none;">进入管理员</a>
+            {% endif %}
+        </div>
+    </div>
+    <div style="margin-top:14px; display:grid; grid-template-columns:repeat(auto-fit, minmax(220px, 1fr)); gap:12px;">
+        <div class="content-card" style="padding:14px;">
+            <div style="opacity:0.75; font-size:12px;">身份</div>
+            <div style="font-size:22px; font-weight:800;">{{ "管理员" if is_admin else "普通用户" }}</div>
+        </div>
+    </div>
+</div>
+
+<div style="height:12px;"></div>
+
+<div class="content-card">
+    <div style="font-size:16px; font-weight:800; margin-bottom:10px;">我的房屋评估</div>
+    {% if assessments %}
+        <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(260px, 1fr)); gap:12px;">
+            {% for a in assessments %}
+            <div class="content-card" style="padding:14px;">
+                <div style="display:flex; justify-content:space-between; gap:10px;">
+                    <div style="font-weight:800;">{{ a.name }}</div>
+                    <div style="opacity:0.75; font-size:12px;">{{ a.status }}</div>
+                </div>
+                <div style="margin-top:8px; opacity:0.85; font-size:13px;">{{ a.address }}</div>
+                <div style="margin-top:8px; opacity:0.7; font-size:12px;">{{ a.assessment_date }}</div>
+            </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div style="opacity:0.75;">暂无评估记录</div>
+    {% endif %}
+</div>
+{% endblock %}

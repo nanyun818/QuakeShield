@@ -1,0 +1,189 @@
+{% extends "base.html" %}
+
+{% block title %}灾情分析与可视化 - 灾情管理系统{% endblock %}
+
+{% block header_title %}灾情分析与可视化{% endblock %}
+
+{% block content %}
+<div class="disaster-analysis">
+    <h2>灾情分析与可视化</h2>
+    <div class="analysis-grid">
+        <!-- 1. 数据统计（饼图） -->
+        <div class="analysis-card">
+            <h3>灾害类型统计</h3>
+            <canvas id="disasterTypeChart" width="300" height="200"></canvas>
+        </div>
+
+        <!-- 2. 趋势分析（折线图） -->
+        <div class="analysis-card">
+            <h3>近7天灾害趋势</h3>
+            <canvas id="trendChart" width="300" height="200"></canvas>
+        </div>
+
+        <!-- 3. 受灾区域分布（高德地图） -->
+        <div class="analysis-card">
+            <h3>受灾区域分布</h3>
+            <div id="map-container" style="height: 200px; width: 100%; border-radius: 4px;"></div>
+        </div>
+
+        <!-- 4. 损失评估（表格） -->
+        <div class="analysis-card">
+            <h3>经济损失评估（万元）</h3>
+            <table class="loss-table">
+                <thead>
+                    <tr><th>地区</th><th>损失</th></tr>
+                </thead>
+                <tbody>
+                    {% for item in data.loss_assessment %}
+                    <tr>
+                        <td>{{ item.region }}</td>
+                        <td>{{ item.loss }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block additional_styles %}
+<style>
+    .disaster-analysis {
+        padding: 20px;
+    }
+
+    .disaster-analysis h2 {
+        color: #001F5B;
+        margin-bottom: 30px;
+    }
+
+    .analysis-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 20px;
+    }
+
+    .analysis-card {
+        background: #fff;
+        border-radius: 24px;
+        padding: 20px;
+        box-shadow: 0 14px 38px rgba(56, 189, 248, 0.18);
+        border: 1px solid rgba(56, 189, 248, 0.22);
+        transition: transform 0.18s ease, box-shadow 0.18s ease;
+    }
+    .analysis-card:hover {
+        transform: translateY(-2px) scale(1.01);
+        box-shadow: 0 18px 46px rgba(56, 189, 248, 0.24);
+    }
+
+    .analysis-card h3 {
+        color: #001F5B;
+        margin-bottom: 15px;
+        font-size: 1.1em;
+    }
+
+    /* 损失表格样式 */
+    .loss-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 14px;
+    }
+
+    .loss-table th,
+    .loss-table td {
+        padding: 8px 10px;
+        text-align: left;
+        border-bottom: 1px solid rgba(56, 189, 248, 0.18);
+    }
+
+    .loss-table th {
+        color: #2B5AA8;
+        font-weight: 600;
+    }
+</style>
+{% endblock %}
+
+{% block additional_scripts %}
+<!-- 引入 Chart.js（用于统计图表） -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<!-- 引入高德地图 API -->
+<script type="text/javascript"
+    src="https://webapi.amap.com/maps?v=2.0&key={{ amap_key }}&plugin=AMap.Marker,AMap.InfoWindow">
+</script>
+
+<script>
+// ========== 1. 灾害类型饼图 ==========
+const typeCtx = document.getElementById('disasterTypeChart').getContext('2d');
+new Chart(typeCtx, {
+    type: 'pie',
+    data: {
+        labels: [{% for k in data.disaster_types.keys() %}"{{ k }}",{% endfor %}],
+        datasets: [{
+            data: [{% for v in data.disaster_types.values() %}{{ v }},{% endfor %}],
+            backgroundColor: [
+                '#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF'
+            ]
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: { position: 'bottom' }
+        }
+    }
+});
+
+// ========== 2. 趋势折线图 ==========
+const trendCtx = document.getElementById('trendChart').getContext('2d');
+new Chart(trendCtx, {
+    type: 'line',
+    data: {
+        labels: [{% for day in data.trend_days %}"{{ day }}",{% endfor %}],
+        datasets: [{
+            label: '灾害事件数',
+            data: [{% for count in data.trend_counts %}{{ count }},{% endfor %}],
+            borderColor: '#FF6384',
+            backgroundColor: 'rgba(255, 99, 132, 0.1)',
+            fill: true,
+            tension: 0.3
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+            y: { beginAtZero: true }
+        }
+    }
+});
+
+// ========== 3. 高德地图：受灾点分布 ==========
+const map = new AMap.Map('map-container', {
+    zoom: 4,
+    center: [105.0, 35.0], // 中国中心
+    zoomEnable: true,
+    scrollWheel: true
+});
+
+// 添加标记点
+{% for loc in data.affected_locations %}
+    const marker{{ loop.index }} = new AMap.Marker({
+        position: [{{ loc.lng }}, {{ loc.lat }}],
+        title: "{{ loc.name }}",
+        icon: "https://webapi.amap.com/theme/v1.3/markers/n/mark_b.png"
+    });
+    map.add(marker{{ loop.index }});
+
+    // 添加信息窗
+    marker{{ loop.index }}.on('click', function() {
+        new AMap.InfoWindow({
+            content: '<div style="padding:8px;"><strong>{{ loc.name }}</strong><br>类型: {{ loc.type }}</div>',
+            offset: new AMap.Pixel(0, -10)
+        }).open(map, marker{{ loop.index }}.getPosition());
+    });
+{% endfor %}
+</script>
+{% endblock %}

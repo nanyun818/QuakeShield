@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>注册 - 灾情管理系统</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Microsoft YaHei', sans-serif;
+            background: linear-gradient(120deg, #a1c4fd, #c2e9fb);
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .register-container {
+            background: white;
+            padding: 40px;
+            border-radius: 24px;
+            box-shadow: 0 14px 38px rgba(56, 189, 248, 0.22);
+            width: 100%;
+            max-width: 400px;
+            border: 1px solid rgba(56, 189, 248, 0.18);
+        }
+
+        .register-title {
+            text-align: center;
+            margin-bottom: 30px;
+            color: #001F5B;
+            font-size: 24px;
+            font-weight: 800;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            color: #2B5AA8;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid rgba(56, 189, 248, 0.28);
+            border-radius: 18px;
+            font-size: 16px;
+            color: #001F5B;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: rgba(163, 230, 53, 0.9);
+            box-shadow: 0 0 0 6px rgba(56, 189, 248, 0.18);
+        }
+
+        .register-btn {
+            width: 100%;
+            padding: 12px;
+            background: linear-gradient(135deg, #A3E635, #38BDF8);
+            border: none;
+            border-radius: 18px;
+            color: #001F5B;
+            font-size: 16px;
+            cursor: pointer;
+            transition: transform 0.2s;
+            font-weight: 800;
+            box-shadow: 0 14px 38px rgba(56, 189, 248, 0.22);
+        }
+
+        .register-btn:hover {
+            transform: translateY(-2px);
+        }
+
+        .flash-messages {
+            margin-bottom: 20px;
+        }
+
+        .flash-message {
+            padding: 10px;
+            background-color: #ff6b6b;
+            color: white;
+            border-radius: 5px;
+            margin-bottom: 10px;
+        }
+        .flash-message.success {
+            background-color: #28a745;
+        }
+        .flash-message.error {
+            background-color: #ff6b6b;
+        }
+
+        .login-link {
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        .login-link a {
+            color: #2B5AA8;
+            text-decoration: none;
+            font-size: 14px;
+            transition: color 0.3s;
+        }
+
+        .login-link a:hover {
+            color: #001F5B;
+        }
+
+        .password-requirements {
+            font-size: 12px;
+            color: #2B5AA8;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="register-container">
+        <h1 class="register-title">注册新账号</h1>
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <div class="flash-messages">
+                    {% for category, message in messages %}
+                        <div class="flash-message {{ category }}">{{ message }}</div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        {% endwith %}
+        <form method="POST">
+            <div class="form-group">
+                <label for="username">用户名</label>
+                <input type="text" id="username" name="username" required>
+            </div>
+            <div class="form-group">
+                <label for="password">密码</label>
+                <input type="password" id="password" name="password" required>
+                <div class="password-requirements">密码长度必须大于6位</div>
+            </div>
+            <div class="form-group">
+                <label for="confirm_password">确认密码</label>
+                <input type="password" id="confirm_password" name="confirm_password" required>
+            </div>
+            <button type="submit" class="register-btn">注册</button>
+        </form>
+        <div class="login-link">
+            <a href="{{ url_for('login') }}">已有账号？点击登录</a>
+        </div>
+    </div>
+</body>
+</html> 

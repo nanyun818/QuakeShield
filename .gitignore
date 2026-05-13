@@ -1,0 +1,31 @@
+# Local environment and secrets
+.env
+.env.*
+!.env.example
+
+# Python caches and virtual environments
+__pycache__/
+*.py[cod]
+*.pyo
+.Python
+.venv/
+venv/
+env/
+
+# Editor and OS files
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+
+# Runtime data
+instance/
+*.db
+*.sqlite
+*.sqlite3
+
+# Logs and generated archives
+*.log
+*.tgz
+*.tar.gz
+*.zip

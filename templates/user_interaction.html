@@ -1,0 +1,161 @@
+{% extends "base.html" %}
+
+{% block title %}用户交互模块 - 灾情管理系统{% endblock %}
+
+{% block header_title %}用户交互模块{% endblock %}
+
+{% block content %}
+<div class="user-interaction">
+    <h2>用户交互</h2>
+    <p>欢迎使用用户交互模块。这里可以：</p>
+    <ul>
+        <li>提交灾情报告</li>
+        <li>查看历史反馈</li>
+        <li>与其他用户交流</li>
+        <li>获取实时援助信息</li>
+    </ul>
+
+    <div style="margin: 10px 0 20px; display: flex; gap: 10px; flex-wrap: wrap;">
+        <a href="{{ url_for('map_display') }}" style="padding: 8px 12px; background: #17a2b8; color: #fff; border-radius: 4px; text-decoration: none;">打开地图</a>
+        <a href="{{ url_for('disaster_analysis') }}" style="padding: 8px 12px; background: #28a745; color: #fff; border-radius: 4px; text-decoration: none;">灾情分析</a>
+        <a href="{{ url_for('building_safety') }}" style="padding: 8px 12px; background: linear-gradient(135deg, #A3E635 0%, #38BDF8 100%); color: #001F5B; border-radius: 18px; text-decoration: none; font-weight: 800; box-shadow: 0 14px 38px rgba(56, 189, 248, 0.18);">房屋AI评估</a>
+    </div>
+
+    <!-- ========== 新增：智能灾情文本分析表单 ========== -->
+    <div class="analysis-section" style="margin-top: 30px; padding-top: 20px; border-top: 1px dashed #ccc;">
+        <h3>🔍 AI 智能分析</h3>
+        <p>请输入一段灾情描述，系统将自动识别灾害类型及风险等级：</p>
+
+        <!-- 提交表单（POST） -->
+        <form method="POST" style="margin: 20px 0;">
+            <textarea
+                name="report_text"
+                rows="4"
+                cols="60"
+                placeholder="例如：北京市朝阳区某老旧居民楼墙体出现明显裂缝，居民已疏散。"
+                style="width: 100%; padding: 10px; border: 1px solid rgba(56, 189, 248, 0.22); border-radius: 18px; font-size: 14px; color: #001F5B;"
+            >{{ request.form.report_text or '' }}</textarea>
+            <br>
+            <button
+                type="submit"
+                style="margin-top: 10px; padding: 8px 20px; background-color: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer;"
+            >
+                智能分析
+            </button>
+        </form>
+
+        <!-- 显示分析结果（如果存在） -->
+        {% if result %}
+        <div class="analysis-result" style="margin-top: 20px; padding: 15px; background-color: #FFFFFF; border-left: 6px solid #A3E635; border-radius: 24px; box-shadow: 0 14px 38px rgba(56, 189, 248, 0.18);">
+            <h4>📊 分析结果</h4>
+            <p><strong>输入文本：</strong>{{ result.text }}</p>
+            <p><strong>预测灾害类型：</strong>
+                <span style="font-weight: 900; color: {% if result.predicted_type in ['地震', '洪水', '滑坡'] %}#001F5B{% else %}#2B5AA8{% endif %};">
+                    {{ result.predicted_type }}
+                </span>
+            </p>
+            <p><strong>置信度：</strong>
+                <span style="font-weight: bold;">
+                    {{ "%.2f"|format(result.confidence) }}
+                </span>
+                （0.0 ~ 1.0，越高越可靠）
+            </p>
+            <p><strong>分析来源：</strong>{{ "Doubao" if result.source == "doubao" else "本地模型" }}</p>
+            <p>
+                <a href="{{ url_for('map_display') }}?disaster_type={{ result.predicted_type }}"
+                   style="color: #007bff; text-decoration: none;">
+                    🗺️ 在地图上查看类似灾害事件
+                </a>
+            </p>
+            {% if result.ai_markdown %}
+            <div class="ai-markdown" data-render-md="1" style="margin-top:12px; padding-top:12px; border-top:1px solid rgba(56, 189, 248, 0.22); color:#143D7A;">
+                {{ result.ai_markdown }}
+            </div>
+            {% endif %}
+        </div>
+        {% endif %}
+    </div>
+    <!-- ========== 结束：智能分析模块 ========== -->
+</div>
+{% endblock %}
+
+{% block additional_styles %}
+<style>
+    .user-interaction {
+        padding: 20px;
+    }
+
+    .user-interaction h2 {
+        color: #001F5B;
+        margin-bottom: 20px;
+    }
+
+    .user-interaction p {
+        color: #143D7A;
+        margin-bottom: 15px;
+    }
+
+    .user-interaction ul {
+        list-style-type: none;
+    }
+
+    .user-interaction li {
+        padding: 10px 0;
+        color: #2B5AA8;
+        border-bottom: 1px solid rgba(56, 189, 248, 0.22);
+    }
+
+    .user-interaction li:last-child {
+        border-bottom: none;
+    }
+
+    /* 可选：为分析区域增加细微样式 */
+    .analysis-section h3 {
+        color: #001F5B;
+    }
+
+    .ai-markdown h1,
+    .ai-markdown h2,
+    .ai-markdown h3 {
+        color: #001F5B;
+        margin: 10px 0 6px;
+        font-size: 14px;
+    }
+
+    .ai-markdown p {
+        margin: 6px 0;
+    }
+
+    .ai-markdown ul,
+    .ai-markdown ol {
+        padding-left: 18px;
+        margin: 6px 0;
+    }
+
+    .ai-markdown li {
+        margin: 4px 0;
+    }
+</style>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    (function () {
+        const nodes = document.querySelectorAll('[data-render-md="1"]');
+        if (!nodes || !nodes.length) return;
+        if (!window.marked) return;
+        nodes.forEach((el) => {
+            const md = (el.textContent || '').trim();
+            if (!md) return;
+            const rawHtml = window.marked.parse(md);
+            const safeHtml = window.DOMPurify && window.DOMPurify.sanitize
+                ? window.DOMPurify.sanitize(rawHtml, { USE_PROFILES: { html: true } })
+                : rawHtml;
+            el.innerHTML = safeHtml;
+            if (window.hljs) {
+                el.querySelectorAll('pre code').forEach((codeEl) => window.hljs.highlightElement(codeEl));
+            }
+        });
+    })();
+</script>
+{% endblock %}

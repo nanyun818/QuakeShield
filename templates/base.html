@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}灾情管理系统{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Microsoft YaHei', sans-serif;
+            background: #F0F8FF;
+            min-height: 100vh;
+        }
+
+        .header {
+            background: white;
+            padding: 20px;
+            box-shadow: 0 14px 38px rgba(56, 189, 248, 0.18);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header h1 {
+            color: #001F5B;
+            font-size: 24px;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 20px;
+        }
+
+        .nav-links a {
+            text-decoration: none;
+            color: #001F5B;
+            padding: 8px 16px;
+            border-radius: 5px;
+            transition: background-color 0.3s;
+        }
+
+        .nav-links a:hover {
+            background-color: rgba(56, 189, 248, 0.12);
+        }
+
+        .logout-btn {
+            padding: 8px 16px;
+            background: linear-gradient(135deg, #A3E635 0%, #38BDF8 100%);
+            color: #001F5B;
+            border: none;
+            border-radius: 18px;
+            cursor: pointer;
+            text-decoration: none;
+            font-size: 14px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 40px auto;
+            padding: 0 20px;
+        }
+
+        .content {
+            background: white;
+            border-radius: 24px;
+            padding: 30px;
+            box-shadow: 0 14px 38px rgba(56, 189, 248, 0.18);
+        }
+
+        {% block additional_styles %}{% endblock %}
+    </style>
+</head>
+<body>
+    <nav class="main-nav">
+        <div class="nav-brand">灾情管理系统</div>
+        {% if current_user.is_authenticated %}
+        <ul class="nav-links">
+            <li><a href="{{ url_for('dashboard') }}">首页</a></li>
+            <li><a href="{{ url_for('user_interaction') }}">用户交互</a></li>
+            <li><a href="{{ url_for('disaster_analysis') }}">灾情分析</a></li>
+            <li><a href="{{ url_for('building_safety') }}">房屋安全</a></li>
+            <li><a href="{{ url_for('map_display') }}">地图展示</a></li>
+            <li><a href="{{ url_for('me') }}">个人中心</a></li>
+            {% if is_admin %}
+            <li><a href="{{ url_for('admin_index') }}">管理员</a></li>
+            {% endif %}
+            <li><a href="{{ url_for('logout') }}">退出登录</a></li>
+        </ul>
+        {% endif %}
+    </nav>
+
+    <main class="container">
+        {% with messages = get_flashed_messages() %}
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="alert">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+        
+        <h1 class="page-title">{% block header_title %}{% endblock %}</h1>
+        {% block content %}{% endblock %}
+    </main>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/12.0.2/marked.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.1.5/purify.min.js"></script>
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    {% block scripts %}{% endblock %}
+
+    {% if current_user.is_authenticated %}
+    <div id="ai-assistant-root"></div>
+    {% raw %}
+    <script type="text/babel">
+        (function () {
+            const { useEffect, useMemo, useRef, useState } = React;
+            const storageKey = 'ai_conversation_id';
+
+            function getPageContext() {
+                const main = document.querySelector('main.container');
+                const text = (main ? main.innerText : document.body.innerText || '').replace(/\s+/g, ' ').trim();
+                return {
+                    title: document.title || '',
+                    path: window.location.pathname || '',
+                    url: window.location.href || '',
+                    text: text.slice(0, 3500)
+                };
+            }
+
+            function sanitizeHtml(html) {
+                if (window.DOMPurify && window.DOMPurify.sanitize) {
+                    return window.DOMPurify.sanitize(html, { USE_PROFILES: { html: true } });
+                }
+                return html || '';
+            }
+
+            function mdToHtml(md) {
+                if (!window.marked) return '';
+                return sanitizeHtml(window.marked.parse(md || ''));
+            }
+
+            function MessageBubble({ role, content, isMarkdown, imageUrl, imageName }) {
+                const html = useMemo(() => (isMarkdown ? mdToHtml(content) : ''), [content, isMarkdown]);
+                useEffect(() => {
+                    if (isMarkdown && window.hljs) {
+                        setTimeout(() => {
+                            document.querySelectorAll('#aiPanel pre code').forEach((el) => window.hljs.highlightElement(el));
+                        }, 0);
+                    }
+                }, [html, isMarkdown]);
+
+                const isUser = role === 'user';
+                return (
+                    <div className={"flex " + (isUser ? "justify-end" : "justify-start")}>
+                        <div className={
+                            "max-w-[85%] rounded-2xl px-4 py-3 border transition-shadow " +
+                            (isUser
+                                ? "bg-gradient-to-br from-lime-100 to-sky-100 border-sky-200 text-[#001F5B] shadow-[0_12px_26px_rgba(56,189,248,0.18)]"
+                                : "bg-white border-sky-200 text-[#143D7A] shadow-[0_12px_26px_rgba(56,189,248,0.12)]")
+                        }>
+                            {imageUrl ? (
+                                <div className="mb-2">
+                                    <img
+                                        src={imageUrl}
+                                        alt={imageName || "上传图片"}
+                                        className="max-h-56 w-auto rounded-2xl border border-sky-200 shadow-[0_10px_24px_rgba(56,189,248,0.14)]"
+                                        loading="lazy"
+                                    />
+                                    {imageName ? (
+                                        <div className="mt-1 text-xs text-sky-900/70 truncate">{imageName}</div>
+                                    ) : null}
+                                </div>
+                            ) : null}
+                            {isMarkdown ? (
+                                <div className="prose prose-slate max-w-none" dangerouslySetInnerHTML={{ __html: html }} />
+                            ) : (
+                                content ? <div className="whitespace-pre-wrap">{content}</div> : null
+                            )}
+                        </div>
+                    </div>
+                );
+            }
+
+            function AiAssistant() {
+                const [open, setOpen] = useState(false);
+                const [messages, setMessages] = useState(() => ([
+                    { role: 'assistant', content: `你好！我是 AI 助手，可以结合当前页面内容给出建议，也支持上传图片。`, isMarkdown: true }
+                ]));
+                const [text, setText] = useState('');
+                const [file, setFile] = useState(null);
+                const [filePreview, setFilePreview] = useState('');
+                const [sending, setSending] = useState(false);
+                const listRef = useRef(null);
+
+                useEffect(() => {
+                    if (listRef.current) {
+                        listRef.current.scrollTop = listRef.current.scrollHeight;
+                    }
+                }, [messages, open]);
+
+                function newChat() {
+                    localStorage.removeItem(storageKey);
+                    setMessages([{ role: 'assistant', content: '已创建新会话。你可以描述需求或上传图片。', isMarkdown: true }]);
+                    setText('');
+                    setFile(null);
+                    setFilePreview('');
+                }
+
+                async function send() {
+                    const trimmed = (text || '').trim();
+                    if (!trimmed && !file) return;
+                    if (sending) return;
+                    setSending(true);
+
+                    setMessages((prev) => [
+                        ...prev,
+                        {
+                            role: 'user',
+                            content: trimmed || '',
+                            isMarkdown: false,
+                            imageUrl: filePreview || '',
+                            imageName: file ? (file.name || '') : ''
+                        }
+                    ]);
+                    setText('');
+
+                    const conversationId = localStorage.getItem(storageKey) || '';
+                    const ctx = getPageContext();
+
+                    try {
+                        let resp;
+                        if (file) {
+                            const fd = new FormData();
+                            fd.append('text', trimmed);
+                            fd.append('conversation_id', conversationId);
+                            fd.append('page_title', ctx.title);
+                            fd.append('page_path', ctx.path);
+                            fd.append('page_url', ctx.url);
+                            fd.append('page_text', ctx.text);
+                            fd.append('image', file);
+                            resp = await fetch('/api/ai/chat', { method: 'POST', body: fd });
+                        } else {
+                            resp = await fetch('/api/ai/chat', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ text: trimmed, conversation_id: conversationId, page_context: ctx })
+                            });
+                        }
+                        const data = await resp.json();
+                        if (!resp.ok) {
+                            const err = (data && data.error) ? String(data.error) : '请求失败';
+                            setMessages((prev) => [...prev, { role: 'assistant', content: err, isMarkdown: false }]);
+                            return;
+                        }
+                        if (data.conversation_id) localStorage.setItem(storageKey, String(data.conversation_id));
+                        setMessages((prev) => [...prev, { role: 'assistant', content: data.assistant_markdown || '', isMarkdown: true }]);
+                    } catch (e) {
+                        setMessages((prev) => [...prev, { role: 'assistant', content: String(e), isMarkdown: false }]);
+                    } finally {
+                        setFile(null);
+                        setFilePreview('');
+                        setSending(false);
+                    }
+                }
+
+                return (
+                    <>
+                        <button
+                            type="button"
+                            onClick={() => setOpen(true)}
+                            className="fixed right-5 bottom-5 z-[1000] h-14 w-14 rounded-full bg-gradient-to-br from-lime-400 to-sky-400 text-[#001F5B] font-extrabold shadow-[0_0_28px_rgba(163,230,53,0.55)] hover:shadow-[0_0_34px_rgba(56,189,248,0.55)] hover:scale-105 transition"
+                        >
+                            AI
+                        </button>
+
+                        {open && (
+                            <div className="fixed right-5 bottom-24 z-[1000] w-[min(460px,calc(100vw-40px))] h-[min(680px,calc(100vh-140px))] rounded-[24px] bg-white/70 backdrop-blur-xl border border-sky-200 shadow-[0_22px_70px_rgba(56,189,248,0.28)] overflow-hidden flex flex-col">
+                                <div className="flex items-center justify-between px-4 py-3 border-b border-sky-200">
+                                    <div className="font-extrabold text-[#001F5B]">AI 助手</div>
+                                    <div className="flex gap-2">
+                                        <button type="button" className="ai-btn ai-btn--ghost" onClick={newChat}>新会话</button>
+                                        <button type="button" className="ai-btn ai-btn--ghost" onClick={() => setOpen(false)}>关闭</button>
+                                    </div>
+                                </div>
+
+                                <div ref={listRef} id="aiPanel" className="flex-1 overflow-auto px-4 py-3 space-y-3">
+                                    {messages.map((m, idx) => (
+                                        <MessageBubble
+                                            key={idx}
+                                            role={m.role}
+                                            content={m.content}
+                                            isMarkdown={m.isMarkdown}
+                                            imageUrl={m.imageUrl}
+                                            imageName={m.imageName}
+                                        />
+                                    ))}
+                                </div>
+
+                                <div className="border-t border-sky-200 p-3 space-y-2">
+                                    <div className="flex items-center gap-3">
+                                        <input
+                                            type="file"
+                                            accept="image/*"
+                                            onChange={(e) => {
+                                                const f = (e.target.files && e.target.files[0]) ? e.target.files[0] : null;
+                                                setFile(f);
+                                                if (!f) {
+                                                    setFilePreview('');
+                                                    return;
+                                                }
+                                                const reader = new FileReader();
+                                                reader.onload = () => setFilePreview(String(reader.result || ''));
+                                                reader.onerror = () => setFilePreview('');
+                                                reader.readAsDataURL(f);
+                                            }}
+                                            className="block w-full text-sm text-[#143D7A] file:mr-3 file:rounded-xl file:border-0 file:bg-sky-100 file:px-3 file:py-2 file:text-[#001F5B] file:font-bold hover:file:bg-sky-200"
+                                        />
+                                    </div>
+                                    {filePreview ? (
+                                        <div className="flex items-center gap-3 rounded-2xl border border-sky-200 bg-white px-3 py-2 shadow-[0_10px_24px_rgba(56,189,248,0.10)]">
+                                            <img
+                                                src={filePreview}
+                                                alt={file ? (file.name || '预览图') : '预览图'}
+                                                className="h-14 w-14 rounded-xl object-cover border border-sky-200"
+                                            />
+                                            <div className="flex-1 min-w-0">
+                                                <div className="text-sm font-bold text-[#001F5B] truncate">{file ? (file.name || '图片') : '图片'}</div>
+                                                <div className="text-xs text-sky-900/70 truncate">将随下一条消息发送</div>
+                                            </div>
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    setFile(null);
+                                                    setFilePreview('');
+                                                }}
+                                                className="ai-btn ai-btn--ghost"
+                                            >
+                                                移除
+                                            </button>
+                                        </div>
+                                    ) : null}
+                                    <div className="flex gap-2 items-end">
+                                        <textarea
+                                            rows={2}
+                                            value={text}
+                                            onChange={(e) => setText(e.target.value)}
+                                            placeholder="输入你的问题，可选上传图片（Ctrl+Enter 发送）"
+                                            onKeyDown={(e) => {
+                                                if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+                                                    e.preventDefault();
+                                                    send();
+                                                }
+                                            }}
+                                            className="flex-1 rounded-2xl border border-sky-200 bg-white px-3 py-2 text-[#001F5B] placeholder:text-sky-700/60 focus:outline-none focus:ring-4 focus:ring-sky-200/60"
+                                        />
+                                        <button
+                                            type="button"
+                                            className={"ai-btn ai-btn--primary " + (sending ? "opacity-60 cursor-not-allowed" : "")}
+                                            disabled={sending}
+                                            onClick={send}
+                                        >
+                                            {sending ? "发送中" : "发送"}
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+                    </>
+                );
+            }
+
+            if (window.marked) {
+                window.marked.setOptions({ gfm: true, breaks: true });
+            }
+            const rootEl = document.getElementById('ai-assistant-root');
+            if (rootEl) {
+                ReactDOM.createRoot(rootEl).render(<AiAssistant />);
+            }
+        })();
+    </script>
+    {% endraw %}
+    {% endif %}
+</body>
+</html> 

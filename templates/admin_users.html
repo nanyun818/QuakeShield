@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+
+{% block title %}管理员 - 用户管理{% endblock %}
+
+{% block header_title %}管理员后台：{{ "管理员管理" if view == "admins" else "用户管理" }}{% endblock %}
+
+{% block content %}
+<div class="content-card">
+    <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap;">
+        <div style="font-size:16px; font-weight:800;">{{ "管理员管理" if view == "admins" else "用户管理" }}</div>
+        <div style="display:flex; gap:10px; flex-wrap:wrap;">
+            <a class="ai-btn ai-btn--ghost" href="{{ url_for('admin_index') }}" style="text-decoration:none;">后台首页</a>
+            <a class="ai-btn ai-btn--ghost" href="{{ url_for('admin_users') }}" style="text-decoration:none; {% if view != 'admins' %}pointer-events:none; opacity:0.55;{% endif %}">用户管理</a>
+            <a class="ai-btn ai-btn--ghost" href="{{ url_for('admin_admins') }}" style="text-decoration:none; {% if view == 'admins' %}pointer-events:none; opacity:0.55;{% endif %}">管理员管理</a>
+            <a class="ai-btn ai-btn--ghost" href="{{ url_for('admin_manual_assessments') }}" style="text-decoration:none;">人工测评</a>
+            <a class="ai-btn ai-btn--ghost" href="{{ url_for('admin_config') }}" style="text-decoration:none;">系统配置</a>
+            <a class="ai-btn ai-btn--ghost" href="{{ url_for('admin_usage') }}" style="text-decoration:none;">AI 用量</a>
+        </div>
+    </div>
+    <div style="height:10px;"></div>
+    <div style="overflow:auto;">
+        <table style="width:100%; border-collapse:collapse; min-width:760px;">
+            <thead>
+                <tr style="text-align:left; opacity:0.8; font-size:12px;">
+                    <th style="padding:10px; border-bottom:1px solid rgba(255,255,255,0.12);">ID</th>
+                    <th style="padding:10px; border-bottom:1px solid rgba(255,255,255,0.12);">用户名</th>
+                    <th style="padding:10px; border-bottom:1px solid rgba(255,255,255,0.12);">管理员</th>
+                    {% if view != "admins" %}
+                    <th style="padding:10px; border-bottom:1px solid rgba(255,255,255,0.12);">AI 配额</th>
+                    <th style="padding:10px; border-bottom:1px solid rgba(255,255,255,0.12);">AI 调用次数</th>
+                    {% endif %}
+                    <th style="padding:10px; border-bottom:1px solid rgba(255,255,255,0.12);">操作</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for u in users %}
+                <tr>
+                    <td style="padding:10px; border-bottom:1px solid rgba(255,255,255,0.08); opacity:0.8;">{{ u.id }}</td>
+                    <td style="padding:10px; border-bottom:1px solid rgba(255,255,255,0.08); font-weight:700;">
+                        {{ u.username }}
+                        {% if view == "admins" and u.id == current_user.id %}
+                        <span style="opacity:0.7; font-weight:400; font-size:12px;">（当前账号）</span>
+                        {% endif %}
+                    </td>
+                    <td style="padding:10px; border-bottom:1px solid rgba(255,255,255,0.08);">{{ "是" if u.is_admin else "否" }}</td>
+                    {% if view != "admins" %}
+                    <td style="padding:10px; border-bottom:1px solid rgba(255,255,255,0.08);">{{ u.ai_quota if u.ai_quota is not none else "-" }}</td>
+                    <td style="padding:10px; border-bottom:1px solid rgba(255,255,255,0.08);">{{ u.ai_used }}</td>
+                    {% endif %}
+                    <td style="padding:10px; border-bottom:1px solid rgba(255,255,255,0.08);">
+                        <form method="POST" action="{{ url_for('admin_admins') if view == 'admins' else url_for('admin_users') }}" style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
+                            <input type="hidden" name="user_id" value="{{ u.id }}">
+                            <label style="display:flex; gap:6px; align-items:center; opacity:0.85; font-size:13px;">
+                                <input type="checkbox" name="is_admin" value="1" {% if u.is_admin %}checked{% endif %}>
+                                设为管理员
+                            </label>
+                            {% if view != "admins" %}
+                            <input class="form-input" name="ai_quota" placeholder="配额(可空)" value="{{ u.ai_quota if u.ai_quota is not none else '' }}" style="width:120px;">
+                            {% endif %}
+                            <label style="display:flex; gap:6px; align-items:center; opacity:0.85; font-size:13px;">
+                                <input type="checkbox" name="reset_ai_used" value="1">
+                                重置次数
+                            </label>
+                            <input class="form-input" name="new_password" placeholder="新密码(可空)" value="" style="width:140px;">
+                            <button class="ai-btn" type="submit">保存</button>
+                        </form>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

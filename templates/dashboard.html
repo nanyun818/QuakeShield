@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+
+{% block title %}主面板 - 灾情管理系统{% endblock %}
+
+{% block header_title %}主面板{% endblock %}
+
+{% block content %}
+<div class="content-card">
+    <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(220px, 1fr)); gap:12px;">
+        <div class="content-card" style="padding:14px;">
+            <div style="opacity:0.75; font-size:12px;">灾害事件</div>
+            <div style="font-size:22px; font-weight:800;">{{ stats.total_disasters }}</div>
+        </div>
+        <div class="content-card" style="padding:14px;">
+            <div style="opacity:0.75; font-size:12px;">不安全建筑</div>
+            <div style="font-size:22px; font-weight:800;">{{ stats.unsafe_buildings }}</div>
+        </div>
+        <div class="content-card" style="padding:14px;">
+            <div style="opacity:0.75; font-size:12px;">活跃预警</div>
+            <div style="font-size:22px; font-weight:800;">{{ stats.active_alerts }}</div>
+        </div>
+    </div>
+</div>
+
+<div style="height:12px;"></div>
+
+<div class="content-card">
+    <div style="font-size:16px; font-weight:800; margin-bottom:10px;">快速入口</div>
+    <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(220px, 1fr)); gap:12px;">
+        <a class="content-card" href="{{ url_for('user_interaction') }}" style="padding:16px; text-decoration:none; color:inherit;">
+            <div style="font-weight:800;">用户交互</div>
+            <div style="opacity:0.75; font-size:13px; margin-top:6px;">提交灾情描述，获取建议</div>
+        </a>
+        <a class="content-card" href="{{ url_for('disaster_analysis') }}" style="padding:16px; text-decoration:none; color:inherit;">
+            <div style="font-weight:800;">灾情分析</div>
+            <div style="opacity:0.75; font-size:13px; margin-top:6px;">趋势统计与区域对比</div>
+        </a>
+        <a class="content-card" href="{{ url_for('building_safety') }}" style="padding:16px; text-decoration:none; color:inherit;">
+            <div style="font-weight:800;">房屋安全</div>
+            <div style="opacity:0.75; font-size:13px; margin-top:6px;">评估记录与安全等级</div>
+        </a>
+        <a class="content-card" href="{{ url_for('map_display') }}" style="padding:16px; text-decoration:none; color:inherit;">
+            <div style="font-weight:800;">地图展示</div>
+            <div style="opacity:0.75; font-size:13px; margin-top:6px;">查看地震点位与图层</div>
+        </a>
+        <a class="content-card" href="{{ url_for('me') }}" style="padding:16px; text-decoration:none; color:inherit;">
+            <div style="font-weight:800;">个人中心</div>
+            <div style="opacity:0.75; font-size:13px; margin-top:6px;">查看你的数据与权限</div>
+        </a>
+    </div>
+</div>
+{% endblock %}
