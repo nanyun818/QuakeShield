@@ -48,10 +48,7 @@ pip install -r requirements.txt
 python app.py
 ```
 
-3. 在浏览器中访问：
-```
-http://localhost:5000
-```
+
 
 ## 默认登录信息
 
